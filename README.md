@@ -1,4 +1,4 @@
-# Consequences of Reporting Frequency & Spatial Aggregation for Forecasting Performance
+# Daily versus Weekly Data in Epidemiological Forecasting: Computational and Practical Implications
 
 In the case of COVID-19 infection incidence in South Africa, based on provincial reporting.
 
