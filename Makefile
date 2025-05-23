@@ -92,6 +92,15 @@ ${FIGDIR}/fig_panel_%.png: \
 	${OUTDIR}/diagnostics_%.csv | ${FIGDIR}
 	$(call R)
 
+${FIGDIR}/fig_panel_ratchets_%.png: \
+	R/fig_panel_ratchets.R \
+	${DATDIR}/daily_%.rds \
+	${DATDIR}/weekly_%.rds \
+	${OUTDIR}/forecast_daily_%.rds \
+	${OUTDIR}/forecast_weekly_%.rds \
+	${OUTDIR}/forecast_rescale_%.rds \
+	$(call R)
+
 ${FIGDIR}/score_scatter_%.png: R/fig_crps.R ${OUTDIR}/score_%.rds
 	$(call R)
 
