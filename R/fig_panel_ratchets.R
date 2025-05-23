@@ -4,23 +4,19 @@ library(patchwork)
 
 .args <- if (interactive()) c(
     file.path("local", "data", c("daily_GP.rds", "weekly_GP.rds")), # cases
-    file.path("local", "output", "score_GP.rds"), # scores
     file.path("local", "output",
               c("forecast_daily_GP.rds",
                 "forecast_weekly_GP.rds",
                 "forecast_special_GP.rds"
               )
     ), # forecasts (also contains timing)
-    file.path("local", "output", "diagnostics_GP.csv"), # diagnostics
-    file.path("local", "figures", "fig_panel_rachets_GP.png") # rachets
+    file.path("local", "figures", "fig_panel_ratchets_GP.png") # ratchets
 ) else commandArgs(trailingOnly = TRUE)
 
 # Load the raw data
 # Cases
 daily_cases <- readRDS(.args[1])
 weekly_cases <- readRDS(.args[2])
-# Scores
-scores <- readRDS(.args[3])
 
 # Function to read forecasts and timings and rbind
 read_bulk_and_rbind <- function(files, out_type) {
@@ -35,13 +31,13 @@ read_bulk_and_rbind <- function(files, out_type) {
 }
 
 # Forecasts
-forecasts_dt <- read_bulk_and_rbind(.args[4:6], "forecast")
+forecasts_dt <- read_bulk_and_rbind(.args[3:5], "forecast")
 
 # Get the slides and their dates for merging with the other data
 slide_dates_dictionary <- forecasts_dt[type == "weekly", .SD[1], by = "slide", .SDcols = c("date")]
 
 # Runtimes
-rachets_dt <- read_bulk_and_rbind(.args[4:6], "timing")
+rachets_dt <- read_bulk_and_rbind(.args[3:5], "timing")
 
 # Add dates
 rachets_dt <- rachets_dt[
