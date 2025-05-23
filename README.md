@@ -2,20 +2,21 @@
 
 ## Background
 
-The COVID-19 pandemic highlighted the possibility of infectious disease forecasting, with widespread production and consumption of forecasts of cases, hospitalization, and deaths. Notionally, these forecasts informed decisions by individuals, businesses, and public health policy makers and operations. Given their popularity, we expect these methods to be used again in future epidemic and pandemics.
-
-As such, now is the time to investigate the consequences for different deployment arrangements for these methods: they will exist as part an overall response preparation and response plan. That plan will have to make decisions balancing the practicalities and realities of governance intrinsic to public health, so we should be evaluating these methods in terms of the decisions their results would inform and the actual data they might be provided.
-
-In this analysis, we consider how aggregation in time and space can affect the quality of forecasts.
+We evaluated the predictive and computational tradeoffs of forecasting COVID-19 infections using daily vs. weekly case data in South Africa. Using a recent forecast accumulation feature modelling aggregated data in the [EpiNow2](https://epiforecasts.io/EpiNow2/) modelling framework, we compared forecast accuracy and efficiency. While daily data produced better fits overall, similar performance can be achieved with weekly data, albeit with greater computational tradeoffs. We outline a workflow to achieve comparable model fits across temporal resolutions. These findings are context-dependent and must be balanced against the value of timely, accurate public health decisions.
 
 ## Quick Start
 
-This analysis uses [`(gnu)make`](https://www.gnu.org/software/make/manual/make.html) to create a pipeline of analysis steps, primarily using [`R`](https://www.r-project.org/), with data handling using `{data.table}`, forecasting using `{EpiNow2}`, scoring using `{scoringutils}`, and visualizations using `{ggplot2}`. Assuming `git`, `make`, and `R` available, installation can be managed at command prompt with:
+This analysis uses [`(gnu)make`](https://www.gnu.org/software/make/manual/make.html) to orchestrate a pipeline of analysis steps, primarily using [`R`](https://www.r-project.org/), with data handling using `{data.table}`, forecasting using `{EpiNow2}`, scoring using `{scoringutils}`, and visualizations using `{ggplot2}`. Assuming `git`, `make`, and `R` installed.
 
 ```bash
-$ git clone git@github.com:tatendashoko/now-fore-cast
-$ cd now-fore-cast
-$ make install_packages
+$ git clone https://github.com/jamesmbaazam/daily-vs-weekly-forecast-eval.git
+$ cd daily-vs-weekly-forecast-eval
+```
+
+You can generate the results by running ```make```, however, note that it takes several hours to days to generate the targets for all the provinces, depending on your computing infrastructure. We recommend that you instead start by generating targets for one province, say, "GP", with
+
+ ```bash
+$ make local/figures/fig_panel_GP.png
 ```
 
 ## Data:
