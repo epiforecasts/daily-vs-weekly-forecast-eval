@@ -120,6 +120,7 @@ get_rstan_diagnostics <- function(fit) {
         fit_ess_basic <- posterior::ess_basic(reports_posterior)
         fit_ess_bulk <- posterior::ess_bulk(reports_posterior)
         fit_ess_tail <- posterior::ess_tail(reports_posterior)
+        fit_rhat <- posterior::rhat(reports_posterior)
 
         diagnostics <- data.table(
             "samples" = nrow(np) / length(unique(np$Parameter)),
@@ -129,7 +130,8 @@ get_rstan_diagnostics <- function(fit) {
             "max_treedepth" = max(np[treedepth_indices, ]$Value),
             "ess_basic" = fit_ess_basic,
             "ess_bulk" = fit_ess_bulk,
-            "ess_tail" = fit_ess_tail
+            "ess_tail" = fit_ess_tail,
+            "rhat" = fit_rhat
         )
         diagnostics[, no_at_max_treedepth :=
                         sum(np[treedepth_indices, ]$Value == max_treedepth)
@@ -146,7 +148,7 @@ get_rstan_diagnostics <- function(fit) {
             "ess_basic" = NA,
             "ess_bulk" = NA,
             "ess_tail" = NA,
-            "stan_elapsed_time" = NA
+            "rhat" = NA
         )
     }
     return(diagnostics[])
@@ -254,7 +256,7 @@ res_dt <- lapply(slides, \(slide) {
                 "ess_basic" = NA,
                 "ess_bulk" = NA,
                 "ess_tail" = NA,
-                "stan_elapsed_time" = NA
+                "rhat" = NA
             )
             )
         )
