@@ -60,7 +60,7 @@ obs <- obs_opts(
   return_likelihood = FALSE
 )
 
-so <- stan_opts(
+stan <- stan_opts(
 	samples = 5000,
 	control = list(adapt_delta = 0.999, stepsize = 0.1)
 )
@@ -208,7 +208,7 @@ res_dt <- lapply(slides, \(slide) {
                 rt = rt_opts(prior = rt_prior),
                 forecast = forecast_opts(horizon = test_window),
                 obs = obs,
-                stan = so
+                stan = next_stan
             )
 
             # Extract the diagnostic information
