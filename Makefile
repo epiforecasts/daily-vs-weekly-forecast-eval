@@ -110,6 +110,8 @@ allbenchmarkfigs: $(patsubst %,${FIGDIR}/benchmarks_%.png,${PROVINCES})
 
 allpanelfigs: $(patsubst %,${FIGDIR}/fig_panel_%.png,${PROVINCES})
 
+allratchetfigs: $(patsubst %,${FIGDIR}/fig_panel_ratchets_%.png,${PROVINCES})
+
 allscorescatterfigs: $(patsubst %,${FIGDIR}/score_scatter_%.png,${PROVINCES})
 
 # pattern = some province
