@@ -154,9 +154,9 @@ res_dt <- lapply(slides, \(slide) {
 				"per_at_max_treedepth" = NA,
 				"ess_basic" = NA,
 				"ess_bulk" = NA,
-				"ess_tail" = NA
-			)),
-			fit = list(NA)
+				"ess_tail" = NA,
+				"rhat" = NA
+			))
 		)
 	}
 })
