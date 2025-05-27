@@ -184,8 +184,8 @@ res_dt <- lapply(slides, \(slide) {
 	   # diagnostics place holder to guarantee entry into while
 	    diagnostics <- data.table(
 	        divergent_transitions = 20,
-	        ess_bulk = 2,
-	        rhat = 100
+	        ess_bulk = 200,
+	        rhat = 2
 	    ) # place holder to guarantee entry into while
 		ratchets <- -1
 		next_stan <- stan
@@ -197,9 +197,9 @@ res_dt <- lapply(slides, \(slide) {
 		# - ess_bulk >= 400: https://search.r-project.org/CRAN/refmans/rstan/html/Rhat.html AND https://arxiv.org/abs/1903.08008
 		# - divergences <= 10: all we have is that the divergences should be low, so we're assuming 10 here for now. See
 		# https://mc-stan.org/learn-stan/diagnostics-warnings.html#divergent-transitions-after-warmup
-		while(diagnostics$divergent_transitions > 10 &
-		      diagnostics$ess_bulk > 400 &
-		      diagnostics$rhat < 1.05
+		while(diagnostics$divergent_transitions > 10 &&
+		      diagnostics$ess_bulk < 400 &&
+		      diagnostics$rhat > 1.05
 		      ) {
 
 			ratchets <- ratchets + 1
