@@ -149,7 +149,7 @@ res_dt <- lapply(slides, \(slide) {
                 "ess_basic" = NA,
                 "ess_bulk" = NA,
                 "ess_tail" = NA,
-                "stan_elapsed_time" = NA
+                "rhat" = NA
             )
             )
         )
