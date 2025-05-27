@@ -54,7 +54,7 @@ ${DATDIR}/intermediate.rds: R/import.R ${DATDIR}/raw.csv | ${DATDIR}
 	$(call R)
 
 # n.b. raw data also has an UNKNOWN
-PROVINCES := EC FS GP KZN LP MP NC NW WC
+PROVINCES := GP WC EC KZN FS LP MP NC NW
 
 # define all possible extracts
 $(foreach agg,daily weekly,$(foreach tar,${PROVINCES},$(eval EXTRACTS += ${DATDIR}/${agg}_${tar}.rds)))
