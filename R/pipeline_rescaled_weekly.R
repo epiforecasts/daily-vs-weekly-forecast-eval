@@ -101,7 +101,7 @@ res_dt <- lapply(slides, \(slide) {
                 rt = rt_opts(prior = rt_prior),
                 forecast = forecast_opts(horizon = test_window),
                 obs = obs,
-                stan = so
+                stan = next_stan
             )
 
             # Extract the diagnostic information
