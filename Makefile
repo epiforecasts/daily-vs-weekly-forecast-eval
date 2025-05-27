@@ -77,7 +77,7 @@ ${FIGDIR}/incidence.png: R/fig_incidence.R ${DATDIR}/intermediate.rds | ${FIGDIR
 
 ${FIGDIR}/daily_vs_weekly_%.png: R/fig_daily_vs_weekly.R ${DATDIR}/daily_%.rds ${DATDIR}/weekly_%.rds | ${FIGDIR}
 	$(call R)
-	
+
 ${FIGDIR}/benchmarks_%.png: R/fig_timing.R ${OUTDIR}/forecast_daily_%.rds ${OUTDIR}/forecast_weekly_%.rds ${OUTDIR}/forecast_rescale_%.rds | ${FIGDIR}
 	$(call R)
 
@@ -140,4 +140,4 @@ allpanelfigs: $(patsubst %,${FIGDIR}/fig_panel_%.png,${PROVINCES} RSA)
 
 test: $(patsubst %,${OUTDIR}/forecast_daily_%.rds,${ONEPROV}) $(patsubst %,${OUTDIR}/forecast_weekly_%.rds,${ONEPROV}) $(patsubst %,${OUTDIR}/forecast_rescale_%.rds,${ONEPROV})
 
-endrule: allscores
+endrule: allpanelfigs
