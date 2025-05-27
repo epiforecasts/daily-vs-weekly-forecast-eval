@@ -63,7 +63,7 @@ join_and_score <- function(fore_dt, ref_dt) {
             observed = "true_value",
             sample_id = "sample"
         ) |>
-        score()
+        score(metrics = list("crps" = crps_sample))
 }
 
 # wherever the true value is NA, we are assuming the prediction should be
