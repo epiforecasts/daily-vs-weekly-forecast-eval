@@ -90,8 +90,8 @@ res_dt <- lapply(slides, \(slide) {
         # https://mc-stan.org/learn-stan/diagnostics-warnings.html#divergent-transitions-after-warmup
         while(diagnostics$divergent_transitions > 10 &&
               diagnostics$ess_bulk < 400 &&
-              diagnostics$rhat > 1.05
-        ) {
+              diagnostics$rhat > 1.05 &&
+		      ratchets < 16) {
             ratchets <- ratchets + 1
             # fit the model
             out <- epinow(
