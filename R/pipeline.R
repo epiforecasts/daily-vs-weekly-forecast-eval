@@ -246,8 +246,7 @@ res_dt <- lapply(slides, \(slide) {
 					ratchets = ratchets
 		        )
 		    ),
-		    diagnostics = list(diagnostics),
-		    fit = ifelse(stan_elapsed_time < lubridate::duration(3), list(out$estimates$fit), list(NA)) # Only save the fit if the runtime is less than specified secs (for memory reasons; the fits are massive = 27 Gb ish)
+		    diagnostics = list(diagnostics)
 		)
 		res_dt
 	} else {
