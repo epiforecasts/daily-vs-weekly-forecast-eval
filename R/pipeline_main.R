@@ -72,13 +72,26 @@ view_dt <- fill_missing(
 res_dt <- lapply(slides, \(slide) {
 	slice <- view_dt[seq_len(train_window) + slide] |> trim_leading_zero()
 	if (slice[, .N > (test_window * 2)]) {
-		diagnostics <- data.table(divergent_transitions = 20) # place holder to guarantee entry into while
+	   # diagnostics place holder to guarantee entry into while
+	    diagnostics <- data.table(
+	        divergent_transitions = 20,
+	        ess_bulk = 2,
+	        rhat = 100
+	    ) # place holder to guarantee entry into while
 		ratchets <- -1
 		next_stan <- stan
 		stan_elapsed_time <- 0
 		crude_run_time <- 0
 
-		while(diagnostics$divergent_transitions > 10) {
+		# Sources for while loop conditions:
+		# - rhat <= 1.05: https://search.r-project.org/CRAN/refmans/rstan/html/Rhat.html AND https://arxiv.org/abs/1903.08008
+		# - ess_bulk >= 400: https://search.r-project.org/CRAN/refmans/rstan/html/Rhat.html AND https://arxiv.org/abs/1903.08008
+		# - divergences <= 10: all we have is that the divergences should be low, so we're assuming 10 here for now. See
+		# https://mc-stan.org/learn-stan/diagnostics-warnings.html#divergent-transitions-after-warmup
+		while(diagnostics$divergent_transitions > 10 &
+		      diagnostics$ess_bulk > 400 &
+		      diagnostics$rhat < 1.05
+		      ) {
 
 			ratchets <- ratchets + 1
 
@@ -101,7 +114,6 @@ res_dt <- lapply(slides, \(slide) {
 			stan_elapsed_time <- stan_elapsed_time + last_run_time
 			crude_run_time <- crude_run_time + out$timing
 			next_stan <- ratchet_control(next_stan)
-
 		}
 		# Extract the forecast cases
 		forecasts <- out$estimates$samples[
