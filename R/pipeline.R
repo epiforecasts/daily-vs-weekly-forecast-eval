@@ -150,19 +150,19 @@ get_rstan_diagnostics <- function(fit) {
 			"ess_tail" = NA
 		)
 	}
-	return(diagnostics[])	
+	return(diagnostics[])
 }
 
 res_dt <- lapply(slides, \(slide) {
 	slice <- view_dt[seq_len(train_window) + slide] |> trim_leading_zero()
 	if (slice[, .N > (test_window * 2)]) {
-		diagnostics <- data.table(divergent_transitions = 10) # place holder to guarantee entry into while
+		diagnostics <- data.table(divergent_transitions = 20) # place holder to guarantee entry into while
 		ratchets <- -1
 		next_stan <- stan
 		stan_elapsed_time <- 0
-		crude_run_time <- 0 
+		crude_run_time <- 0
 
-		while(diagnostics$divergent_transitions > 1) {
+		while(diagnostics$divergent_transitions > 10) {
 
 			ratchets <- ratchets + 1
 
