@@ -2,11 +2,15 @@
 library(data.table)
 library(ggplot2)
 
-.args <- if (interactive()) c(
-  file.path("local", "data", "daily_EC.rds"),
-  file.path("local", "data", "weekly_EC.rds"),
-  file.path("local", "figures", "daily_vs_weekly_EC.png")
-) else commandArgs(trailingOnly = TRUE)
+.args <- if (interactive()) {
+    .prov <- "GP"
+    sprintf(
+        c(
+            file.path("local", "data", "daily_%s.rds"),
+            file.path("local", "data", "weekly_%s.rds"),
+            file.path("local", "figures", "daily_vs_weekly_%s.png")
+        )
+    )} else commandArgs(trailingOnly = TRUE)
 
 daily_dt <- readRDS(.args[1])
 weekly_dt <- readRDS(.args[2])

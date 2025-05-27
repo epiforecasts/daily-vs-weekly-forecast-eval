@@ -1,18 +1,20 @@
 library(data.table)
 
 .args <- if (interactive()) {
-	c(
-	    file.path("local/output",
-	              c("forecast_daily_GP.rds",
-	                "forecast_weekly_GP.rds",
-	                "forecast_special_GP.rds"
-	              )
-	    ),
-	    file.path("local/output", "diagnostics_GP.csv")
-	)
-} else {
-    commandArgs(trailingOnly = TRUE)
-}
+    .prov <- "WC"
+    sprintf(
+        c(
+            file.path("local/output",
+                      c("forecast_daily_%s.rds",
+                        "forecast_weekly_%s.rds",
+                        "forecast_rescale_%s.rds"
+                      )
+            ),
+            file.path("local/output", "diagnostics_%s.csv")
+        ),
+        .prov
+    )} else {
+        commandArgs(trailingOnly = TRUE)}
 
 # Get diagnostic data
 files <- .args[1:3]

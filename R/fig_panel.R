@@ -2,18 +2,23 @@ library(data.table)
 library(ggplot2)
 library(patchwork)
 
-.args <- if (interactive()) c(
-    file.path("local", "data", c("daily_GP.rds", "weekly_GP.rds")), # cases
-    file.path("local", "output", "score_GP.rds"), # scores
-    file.path("local", "output",
-              c("forecast_daily_GP.rds",
-                "forecast_weekly_GP.rds",
-                "forecast_special_GP.rds"
-              )
-    ), # forecasts (also contains timing)
-    file.path("local", "output", "diagnostics_GP.csv"), # diagnostics
-    file.path("local", "figures", "fig_panel_GP.png") # diagnostics
-) else commandArgs(trailingOnly = TRUE)
+.args <- if (interactive()) {
+    .prov <- "NC"
+    sprintf(
+        c(
+            file.path("local", "data", c("daily_%s.rds", "weekly_%s.rds")), # cases
+            file.path("local", "output", "score_%s.rds"), # scores
+            file.path("local", "output",
+                      c("forecast_daily_%s.rds",
+                        "forecast_weekly_%s.rds",
+                        "forecast_rescale_%s.rds"
+                      )
+            ), # forecasts (also contains timing)
+            file.path("local", "output", "diagnostics_%s.csv"), # diagnostics
+            file.path("local", "figures", "fig_panel_%s.png") # diagnostics
+        ),
+        .prov)
+} else commandArgs(trailingOnly = TRUE)
 
 # Load the raw data
 # Cases

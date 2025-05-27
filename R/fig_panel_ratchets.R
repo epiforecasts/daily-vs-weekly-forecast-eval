@@ -2,16 +2,21 @@ library(data.table)
 library(ggplot2)
 library(patchwork)
 
-.args <- if (interactive()) c(
-    file.path("local", "data", c("daily_GP.rds", "weekly_GP.rds")), # cases
-    file.path("local", "output",
-              c("forecast_daily_GP.rds",
-                "forecast_weekly_GP.rds",
-                "forecast_special_GP.rds"
-              )
-    ), # forecasts (also contains timing)
-    file.path("local", "figures", "fig_panel_ratchets_GP.png") # ratchets
-) else commandArgs(trailingOnly = TRUE)
+.args <- if (interactive()) {
+    .prov <- "WC"
+    sprintf(
+        c(
+            file.path("local", "data", c("daily_%s.rds", "weekly_%s.rds")), # cases
+            file.path("local", "output",
+                      c("forecast_daily_%s.rds",
+                        "forecast_weekly_%s.rds",
+                        "forecast_rescale_%s.rds"
+                      )
+            ), # forecasts (also contains timing)
+            file.path("local", "figures", "fig_panel_ratchets_%s.png")
+        ), # ratchets
+        .prov
+    )} else commandArgs(trailingOnly = TRUE)
 
 # Load the raw data
 # Cases

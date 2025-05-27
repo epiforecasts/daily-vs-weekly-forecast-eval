@@ -5,10 +5,14 @@ library(bayesplot)
 
 options(mc.cores = parallel::detectCores() - 1)
 
-.args <- if (interactive()) c(
-  "local/data/weekly_GP.rds",
-  "local/output/forecast_special_GP.rds"
-) else commandArgs(trailingOnly = TRUE)
+.args <- if (interactive()) {
+    .prov <- "GP"
+    sprintf(
+        c(
+            "local/data/weekly_%s.rds",
+            "local/output/forecast_special_%s.rds"),
+        .prov
+    )} else commandArgs(trailingOnly = TRUE)
 
 # inflate as.Date, because EpiNow2 seems to prefer Date over IDate
 dt <- readRDS(.args[1])[, .(date = as.Date(date), confirm)][!is.na(confirm)]
