@@ -67,18 +67,19 @@ stan <- stan_opts(
 	control = control_opts
 )
 
-ratchet_control <- function(stan_cfg) within(stan_cfg, {
-	control <- within(control, {
-		adapt_delta <- adapt_delta + (1 - adapt_delta) * 0.5
-		max_treedepth <- max_treedepth + 2
-		stepsize <- stepsize * 0.5
-	})
-})
+####################################
+# Functions
+####################################
+#' Trim leading zeros
+#'
+#' @param init_dt the raw dt
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+trim_leading_zero <- function (init_dt) {
 
-
-# find the position of first non-zero
-# keep it, any leading NAs
-trim_leading_zero <- function (init_dt) { 
 	first_non_zero <- init_dt[, which.max(confirm != 0)]
 	if (first_non_zero == 1) {
 		return(init_dt)
@@ -92,17 +93,13 @@ trim_leading_zero <- function (init_dt) {
 	}
 }
 
-view_dt <- fill_missing(
-  dt, missing_dates = "accumulate", missing_obs = "accumulate"
-)
-
 #' @title Get rstan diagnostics
 #' @description
 #' Summarise the diagnostic information contained in a `<stanfit>` object. If
 #' the object is not a stanfit object, return a data.table with NA values.
 #' This function is adapted from the `{epidist}` R package in
 #' https://github.com/epinowcast/epidist/pull/175/files
-#' 
+#'
 #' @param fit A stanfit object
 #'
 #' @return A data.table containing the summarised diagnostics
@@ -122,7 +119,7 @@ get_rstan_diagnostics <- function(fit) {
 		fit_ess_basic <- posterior::ess_basic(reports_posterior)
 		fit_ess_bulk <- posterior::ess_bulk(reports_posterior)
 		fit_ess_tail <- posterior::ess_tail(reports_posterior)
-		
+
 		diagnostics <- data.table(
 			"samples" = nrow(np) / length(unique(np$Parameter)),
 			"max_rhat" = round(max(bayesplot::rhat(fit), na.rm = TRUE), 3),
@@ -152,6 +149,31 @@ get_rstan_diagnostics <- function(fit) {
 	}
 	return(diagnostics[])
 }
+
+#' Define new parameter values for tuning the model
+#'
+#' @param stan_cfg Current stan parameter values
+#'
+#' @returns New stan parameter values
+#' @export
+#'
+#' @examples
+ratchet_control <- function(stan_cfg) within(stan_cfg, {
+    control <- within(control, {
+        adapt_delta <- adapt_delta + (1 - adapt_delta) * 0.5
+        max_treedepth <- max_treedepth + 2
+        stepsize <- stepsize * 0.5
+    })
+})
+
+
+###############################
+# Pipeline
+###############################
+view_dt <- fill_missing(
+    dt, missing_dates = "accumulate", missing_obs = "accumulate"
+)
+
 
 res_dt <- lapply(slides, \(slide) {
 	slice <- view_dt[seq_len(train_window) + slide] |> trim_leading_zero()

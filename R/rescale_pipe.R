@@ -65,9 +65,19 @@ so <- stan_opts(
 	control = list(adapt_delta = 0.999, stepsize = 0.1)
 )
 
-# find the position of first non-zero
-# keep it, any leading NAs
-trim_leading_zero <- function (init_dt) { 
+####################################
+# Functions
+####################################
+#' Trim leading zeros
+#'
+#' @param init_dt the raw dt
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+trim_leading_zero <- function (init_dt) {
+
 	first_non_zero <- init_dt[, which.max(confirm != 0)]
 	if (first_non_zero == 1) {
 		return(rbind(init_dt[1, .(date = date - 1, confirm = 0, orig_date = orig_date - 7)], init_dt))
@@ -90,7 +100,7 @@ trim_leading_zero <- function (init_dt) {
 #' the object is not a stanfit object, return a data.table with NA values.
 #' This function is adapted from the `{epidist}` R package in
 #' https://github.com/epinowcast/epidist/pull/175/files
-#' 
+#'
 #' @param fit A stanfit object
 #'
 #' @return A data.table containing the summarised diagnostics
@@ -139,79 +149,116 @@ get_rstan_diagnostics <- function(fit) {
             "stan_elapsed_time" = NA
         )
     }
-    return(diagnostics[])	
+    return(diagnostics[])
 }
 
+#' Define new parameter values for tuning the model
+#'
+#' @param stan_cfg Current stan parameter values
+#'
+#' @returns New stan parameter values
+#' @export
+#'
+#' @examples
+ratchet_control <- function(stan_cfg) within(stan_cfg, {
+    control <- within(control, {
+        adapt_delta <- adapt_delta + (1 - adapt_delta) * 0.5
+        max_treedepth <- max_treedepth + 2
+        stepsize <- stepsize * 0.5
+    })
+})
+
+###############################
+# Pipeline
+###############################
 res_dt <- lapply(slides, \(slide) {
-	slice <- dt[seq_len(train_window) + slide] |> trim_leading_zero()
-	# Slides for fitting are in weeks but we need to rescale back to
-	# days for aligning with other scales
-	slide_rescaled <- slide * 7
-	# Fit model
-	if (slice[, .N > test_window * 2]) {
-		out <- epinow(
-			data = slice,
-			generation_time = generation_time_opts(generation_time),
-			delays = delay_opts(delay),
-			rt = rt_opts(prior = rt_prior),
-			forecast = forecast_opts(horizon = test_window),
-			obs = obs,
-			stan = so
-		)
-		# Extract the forecasted cases
-		forecasts <- out$estimates$samples[
-			variable == "reported_cases" & type == "forecast",
-			.(date, sample, value, slide = slide)
-			]
-		# Extract the diagnostic information
-		diagnostics <- get_rstan_diagnostics(out$estimates$fit)
-		diagnostics <- diagnostics[, slide := slide_rescaled]
-		# Extract and append stan's internal timing of the model fitting process.
-		stan_elapsed_time <- sum(rstan::get_elapsed_time(out$estimates$fit))
-		diagnostics <- diagnostics[, "stan_elapsed_time" := stan_elapsed_time] #  NB: NEEDS REVIEW: Currently computes total time taken for warmup and sampling for all chains.
-		# Extract the crude timing measured by epinow()
-		crude_run_time <- out$timing
-		# Combine the forecast, timing and diagnostics
-		forecast_dt <- data.table(
-		    forecast = list(forecasts),
-		    timing = list(
-		        data.table(
-		            slide = slide_rescaled,
-		            crude_run_time = crude_run_time,
-		            stan_elapsed_time = stan_elapsed_time
-		        )
-		    ),
-		    diagnostics = list(diagnostics)
-		)
-	} else {
-	    empty_forecast <- data.table(
-	        date = dt[train_window + slide, date + seq_len(test_window)],
-	        sample = NA_integer_, value = NA_integer_, slide = slide_rescaled
-	    )
-	    res <- data.table(
-	        forecast = list(empty_forecast),
-	        timing = list(data.table(
-	            slide = slide_rescaled,
-	            crude_run_time = lubridate::as.duration(NA),
-	            stan_elapsed_time = lubridate::as.duration(NA))
-	        ),
-	        diagnostics = list(data.table(
-	            slide = slide_rescaled,
-	            "samples" = NA,
-	            "max_rhat" = NA,
-	            "divergent_transitions" = NA,
-	            "per_divergent_transitions" = NA,
-	            "max_treedepth" = NA,
-	            "no_at_max_treedepth" = NA,
-	            "per_at_max_treedepth" = NA,
-	            "ess_basic" = NA,
-	            "ess_bulk" = NA,
-	            "ess_tail" = NA,
-	            "stan_elapsed_time" = NA
-	        )
-	        )
-	    )
-	}
+    slice <- dt[seq_len(train_window) + slide] |> trim_leading_zero()
+    # Slides for fitting are in weeks but we need to rescale back to
+    # days for aligning with other scales
+    slide_rescaled <- slide * 7
+    # Fit model
+    if (slice[, .N > test_window * 2]) {
+        diagnostics <- data.table(divergent_transitions = 20) # place holder to guarantee entry into while
+        ratchets <- -1
+        next_stan <- stan
+        stan_elapsed_time <- 0
+        crude_run_time <- 0
+        while (diagnostics$divergent_transitions < 11) {
+            ratchets <- ratchets + 1
+            # fit the model
+            out <- epinow(
+                data = slice,
+                generation_time = generation_time_opts(generation_time),
+                delays = delay_opts(delay),
+                rt = rt_opts(prior = rt_prior),
+                forecast = forecast_opts(horizon = test_window),
+                obs = obs,
+                stan = so
+            )
+
+            # Extract the diagnostic information
+            diagnostics <- get_rstan_diagnostics(out$estimates$fit)
+            stan_elapsed_time <- stan_elapsed_time + sum(
+                rstan::get_elapsed_time(out$estimates$fit)
+            )
+            crude_run_time <- crude_run_time + out$timing
+            next_stan <- ratchet_control(next_stan)
+        }
+
+        # Extract the forecasted cases
+        forecasts <- out$estimates$samples[
+            variable == "reported_cases" & type == "forecast",
+            .(date, sample, value, slide = slide)
+        ]
+        # Extract the diagnostic information
+        diagnostics <- get_rstan_diagnostics(out$estimates$fit)
+        diagnostics <- diagnostics[, slide := slide_rescaled]
+        # Extract and append stan's internal timing of the model fitting process.
+        stan_elapsed_time <- sum(rstan::get_elapsed_time(out$estimates$fit))
+        diagnostics <- diagnostics[, "stan_elapsed_time" := stan_elapsed_time] #  NB: NEEDS REVIEW: Currently computes total time taken for warmup and sampling for all chains.
+        # Extract the crude timing measured by epinow()
+        crude_run_time <- out$timing
+        # Combine the forecast, timing and diagnostics
+        res_dt <- data.table(
+            forecast = list(forecasts),
+            timing = list(
+                data.table(
+                    slide = slide_rescaled,
+                    crude_run_time = crude_run_time,
+                    stan_elapsed_time = stan_elapsed_time
+                )
+            ),
+            diagnostics = list(diagnostics)
+        )
+    } else {
+        empty_forecast <- data.table(
+            date = dt[train_window + slide, date + seq_len(test_window)],
+            sample = NA_integer_, value = NA_integer_, slide = slide_rescaled
+        )
+        res_dt <- data.table(
+            forecast = list(empty_forecast),
+            timing = list(data.table(
+                slide = slide_rescaled,
+                crude_run_time = lubridate::as.duration(NA),
+                stan_elapsed_time = lubridate::as.duration(NA))
+            ),
+            diagnostics = list(data.table(
+                slide = slide_rescaled,
+                "samples" = NA,
+                "max_rhat" = NA,
+                "divergent_transitions" = NA,
+                "per_divergent_transitions" = NA,
+                "max_treedepth" = NA,
+                "no_at_max_treedepth" = NA,
+                "per_at_max_treedepth" = NA,
+                "ess_basic" = NA,
+                "ess_bulk" = NA,
+                "ess_tail" = NA,
+                "stan_elapsed_time" = NA
+            )
+            )
+        )
+    }
 }) |> rbindlist()
 
 # Reach into res_dt and update forecast as follows:
