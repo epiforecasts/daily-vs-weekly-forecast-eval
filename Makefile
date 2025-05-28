@@ -98,7 +98,7 @@ ${FIGDIR}/fig_panel_ratchets_%.png: \
 	${DATDIR}/weekly_%.rds \
 	${OUTDIR}/forecast_daily_%.rds \
 	${OUTDIR}/forecast_weekly_%.rds \
-	${OUTDIR}/forecast_rescale_%.rds \
+	${OUTDIR}/forecast_rescale_%.rds | ${FIGDIR}
 	$(call R)
 
 ${FIGDIR}/score_scatter_%.png: R/fig_crps.R ${OUTDIR}/score_%.rds
