@@ -6,7 +6,7 @@ library(scoringutils)
 	.prov <- "GP"
 	c(
 	  sprintf(file.path("local", "data", "%s_%s.rds"), c("daily", "weekly"), .prov),
-	  sprintf(file.path("local", "output", "forecast_%s_%s.rds"), c("daily", "weekly", "special"), .prov),
+	  sprintf(file.path("local", "output", "forecast_%s_%s.rds"), c("daily", "weekly", "rescale"), .prov),
 	  sprintf(file.path("local", "output", "score_%s.rds"), .prov)
 	)
 } else commandArgs(trailingOnly = TRUE)
@@ -17,7 +17,7 @@ weekly_ref_dt <- readRDS(.args[2]) |> setnames("confirm", "true_value")
 # Forecasts
 daily_fore_dt <- readRDS(.args[3])$forecast |> rbindlist() |> setnames("value", "prediction")
 weekly_fore_dt <- readRDS(.args[4])$forecast |> rbindlist() |> setnames("value", "prediction")
-special_fore_dt <- readRDS(.args[5])$forecast |> rbindlist() |> setnames("value", "prediction")
+rescale_fore_dt <- readRDS(.args[5])$forecast |> rbindlist() |> setnames("value", "prediction")
 
 ####################################
 # Functions
