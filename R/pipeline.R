@@ -202,9 +202,8 @@ res_dt <- lapply(slides, \(slide) {
 		      diagnostics$rhat > 1.05 &&
 		      ratchets < 16
 		      ) {
-
+		    # The first ratchet counts as 0
 			ratchets <- ratchets + 1
-
 			# Fit the model
 			out <- epinow(
 				data = slice,
