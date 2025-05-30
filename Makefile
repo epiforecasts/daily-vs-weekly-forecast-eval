@@ -120,10 +120,10 @@ WEEKLYDAT_PAT = ${DATDIR}/weekly_%.rds
 # pattern = province_(daily|weekly|rescale)
 FORECAST_PAT = ${OUTDIR}/forecast_%.rds
 
-${FORECAST_PAT}: R/pipeline.R ${DATDIR}/%.rds | ${OUTDIR}
+${FORECAST_PAT}: R/pipeline.R ${DATDIR}/%.rds R/shared_pipe.R | ${OUTDIR}
 	$(call R)
 
-${OUTDIR}/forecast_rescale_%.rds: R/rescale_pipe.R ${DATDIR}/weekly_%.rds | ${OUTDIR}
+${OUTDIR}/forecast_rescale_%.rds: R/rescale_pipe.R ${DATDIR}/weekly_%.rds R/shared_pipe.R | ${OUTDIR}
 	$(call R)
 
 ${OUTDIR}/score_%.rds: R/score.R ${DATDIR}/daily_%.rds ${DATDIR}/weekly_%.rds ${OUTDIR}/forecast_daily_%.rds ${OUTDIR}/forecast_weekly_%.rds ${OUTDIR}/forecast_rescale_%.rds
