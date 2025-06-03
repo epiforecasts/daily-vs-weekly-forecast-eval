@@ -10,7 +10,7 @@ options(mc.cores = parallel::detectCores() - 1)
     sprintf(
         c(
             "local/data/weekly_%s.rds",
-            "R/shared_pipe.R",
+            "R/pipeline_shared_inputs.R",
             "local/output/forecast_special_%s.rds"),
         .prov
     )} else commandArgs(trailingOnly = TRUE)
