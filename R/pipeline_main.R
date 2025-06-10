@@ -23,14 +23,9 @@ library(bayesplot)
 # Load helper functions and shared model inputs
 source(.args[length(.args) - 1])
 
-# inflate as.Date, because EpiNow2 seems to prefer Date over IDate
-dt <- readRDS(.args[1])[, .(date = as.Date(date), confirm)]
-
-train_window <- 7*10
-test_window <- 7*2
-
-slides <- seq(0, dt[, .N - (train_window + test_window)], by = test_window)
-
+####################################
+# Parameters
+####################################
 # Incubation period
 # Get from epiparameter package doi:10.3390/jcm9020538
 sars_cov_incubation_dist <- epiparameter_db(
@@ -62,7 +57,9 @@ rt_prior <- LogNormal(meanlog = 0.69, sdlog = 0.05)
 # turn on/off week effect below; week effect is off for the weekly accumulated data.
 is_daily <- sub("//_*", "", basename(.args[1])) == "daily"
 
+####################################
 # Observation model
+####################################
 obs <- obs_opts(
   week_effect = ifelse(is_daily, TRUE, FALSE), # turn on week effect if data is on daily scale
   likelihood = TRUE,
@@ -72,6 +69,13 @@ obs <- obs_opts(
 ###############################
 # Pipeline
 ###############################
+# Prepare data
+dt <- readRDS(.args[1])[, .(date = as.Date(date), confirm)][!is.na(confirm)]
+
+# Slides for fitting
+slides <- seq(0, dt[, .N - (train_window + test_window)], by = test_window)
+
+# Fill missing dates
 view_dt <- fill_missing(
     dt, missing_dates = "accumulate", missing_obs = "accumulate"
 )
