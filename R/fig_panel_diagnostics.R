@@ -90,8 +90,9 @@ ratchets_plot <- ggplot(data = daily_cases) +
         position = position_dodge2()
     ) +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
+    scale_color_brewer(na.translate = FALSE, palette = "Dark2") +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-    labs(x = "Date", y = "ratchets")
+    labs(x = "Date", y = "ratchets", fill = "Forecast target")
 
 # Add the dates by slide
 diagnostics_dt <- diagnostics_dt[
@@ -151,7 +152,7 @@ diagnostics_plt <-
 diagnostics_plt
 
 panel_fig <- (cases_plt/diagnostics_plt/ratchets_plot) &
-    plot_layout(ncol = 1, guides = "collect", axes = "collect_x") &
+    # plot_layout(ncol = 1, guides = "collect", axes = "collect_x") &
     plot_annotation(title = paste(daily_cases$province[1])) &
     theme_minimal() &
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
