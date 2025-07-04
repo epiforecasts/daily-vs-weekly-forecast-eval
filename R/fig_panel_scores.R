@@ -103,71 +103,10 @@ score_plt <-
 
 score_plt
 
-### Diagnostics
-
-# Get the slides and their dates for annotating the diagnostics data
-slide_dates_dictionary <- forecasts[type == "weekly", .SD[1], by = "slide", .SDcols = c("date")]
-
-# Add the dates by slide
-diagnostics_dt <- diagnostics_dt[
-    slide_dates_dictionary,
-    on = "slide"
-]
-
-# Reshape the ESS per sec columns into a single column for plotting
-diagnostics_dt_long <- melt(
-    diagnostics_dt,
-    measure.vars = c("ess_basic", "ess_bulk", "ess_tail"),
-    variable.name = "ess_type",
-    value.name = "ess_value"
-)
-
-# Calculate ESS per sec
-diagnostics_dt_long[, ess_per_sec := ess_value/stan_elapsed_time]
-
-# Shorten ess_type values
-# diagnostics_dt_long[, ess_type := gsub("ess_(.*)", "\\1", ess_type)]
-
-# Plot
-diagnostics_plt <-
-    # First make a layer with all dates present
-    ggplot(data = daily_cases) +
-    geom_blank(
-        aes(x = date, y = max(confirm))
-    ) +
-    # Now add the diagnostics data
-    geom_line(
-        data = diagnostics_dt_long[ess_type == "ess_tail"], # Only plotting ESS tail
-        aes(x = date,
-            y = ess_per_sec,
-            color = type
-        )
-    ) +
-    geom_point(
-        data = diagnostics_dt_long[ess_type == "ess_tail"], # Only plotting ESS tail
-        aes(x = date,
-            y = ess_per_sec,
-            color = type
-        ),
-        size = 1
-    ) +
-    scale_y_log10() +
-    scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
-    scale_color_brewer(na.translate = FALSE, palette = "Dark2") +
-    labs(
-        # title = "Effective sample size per second",
-        x = "Date",
-        y = "ESS tail per sec (log10)",
-        color = "Forecast target",
-        linetype = "Data"
-    ) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-diagnostics_plt
 
 # Patchwork
-panel_fig <- (cases_plt + score_plt + diagnostics_plt) &
-    plot_layout(ncol = 1, guides = "collect", axes = "collect_x") &
+panel_fig <- (cases_plt / score_plt) &
+    # plot_layout(ncol = 1, guides = "collect", axes = "collect_x") &
     plot_annotation(title = paste(daily_cases$province[1])) &
     theme_minimal() &
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))

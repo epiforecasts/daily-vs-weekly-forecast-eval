@@ -1,3 +1,6 @@
+
+library(EpiNow2) # Needed to setup EpiNow2 modules
+
 ####################################
 # Functions
 ####################################

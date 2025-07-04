@@ -100,6 +100,7 @@ ${FIGDIR}/fig_panel_diagnostics_%.png: \
 	${OUTDIR}/forecast_daily_%.rds \
 	${OUTDIR}/forecast_weekly_%.rds \
 	${OUTDIR}/forecast_rescale_%.rds \
+	${OUTDIR}/diagnostics_%.csv \
 	${SHARED_INPUTS} | ${FIGDIR}
 	$(call R)
 

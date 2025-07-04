@@ -72,16 +72,17 @@ obs <- obs_opts(
 # Prepare data
 dt <- readRDS(.args[1])[, .(date = as.Date(date), confirm)][!is.na(confirm)]
 
-# Slides for fitting
-slides <- seq(0, dt[, .N - (train_window + test_window)], by = test_window)
-
 # Fill missing dates
-view_dt <- fill_missing(
+dt_complete <- fill_missing(
     dt, missing_dates = "accumulate", missing_obs = "accumulate"
 )
 
+# Slides for fitting
+slides <- seq(0, dt_complete[, .N - (train_window + test_window)], by = test_window)
+
+
 res_dt <- lapply(slides, \(slide) {
-	slice <- view_dt[seq_len(train_window) + slide] |> trim_leading_zero()
+	slice <- dt_complete[seq_len(train_window) + slide] |> trim_leading_zero()
 	if (slice[, .N > (test_window * 2)]) {
 	   # diagnostics place holder to guarantee entry into while
 	    diagnostics <- data.table(
