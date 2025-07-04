@@ -191,3 +191,27 @@ test_window_rescaled <- 2 # 2 weeks
 # Train and forecast windows for daily and weekly data
 train_window <- 7*10
 test_window <- 7*2
+
+# While loop controls
+# Rationale for while loop conditions:
+# - divergences <= 2: all we have is that the divergences should be low, so we're using a more realistic value based on fitting the data many times and not achieving low enough divergences. See
+# https://mc-stan.org/learn-stan/diagnostics-warnings.html#divergent-transitions-after-warmup
+# - To prevent the loop from running forever, we also stop refitting after a specified number of ratchets and return/process the last fit.
+# - By our computation, we need 11 ratchets to bump up adapt_delta from 0.88 to 0.99 in 0.25 increments of the previous value
+#  R code:
+#' initial_delta <- 0.8
+# target_delta <- 0.99
+# adapt_delta <- initial_delta
+# steps <- 0
+# adapt_delta_vec <- initial_delta
+#
+# while (adapt_delta < target_delta) {
+#     adapt_delta <- min(0.990, adapt_delta + (1 - adapt_delta) * 0.25)
+#     steps <- steps + 1
+#     adapt_delta_vec <- append(adapt_delta_vec, adapt_delta)
+# }
+#
+# steps
+# adapt_delta_vec
+divergent_transitions_limit <- 2
+ratchets_limit <- 11
