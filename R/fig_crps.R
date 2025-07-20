@@ -12,9 +12,9 @@ library(patchwork)
 # Scores
 scores <- readRDS(.args[1])
 ## TODO currently aggregating scores via mean - probably just keep the actual dates?
-scores[data == "daily", date := date + 6 ]
-scores[forecast != "rescale", slide := slide / 14L]
-scores[forecast == "rescale", slide := slide / 2L]
+scores[data == "daily" & forecast == "daily", date := date - 6 ]
+# scores[forecast != "rescale", slide := slide / 14L]
+# scores[forecast == "rescale", slide := slide / 14L]
 
 slide_counts <- scores[forecast == "daily", .(tot = .N), by = .(data)]
 
@@ -45,8 +45,14 @@ score_plt <- ggplot(data = scores) +
 			.(date = d, pos = crps[.N])
 		}, by = .(data, forecast)],
 		hjust = 0
+	) + geom_blank(
+	    aes(x = date + 30, y = pos),
+	    data = \(dt) dt[,{
+	        d <- max(date) + 1
+	        .(date = d, pos = crps[.N])
+	    }, by = .(data, forecast)],
 	) +
-  facet_nested("CRPS, by Forecasting Target:" + data ~ ., switch = "y") +
+  facet_nested("CRPS, by Forecasting Target,\ngrouped by forecast horizons" + data ~ ., switch = "y") +
   scale_x_date(
   	NULL, date_breaks = "month",
   	labels = \(b) sprintf("%s%s", monthlabs[month(b)], yearextract(b)),
@@ -101,6 +107,6 @@ rel_plot <- ggplot(data = scores_rel[slide_counts, on = .(data)]) +
         breaks = 10^c(-2:4), minor_breaks = NULL,
         labels = \(b) fifelse(b < 1, sprintf("1/%ix", as.integer(1/b)), sprintf("%ix", as.integer(b)))
     )
-    
+
 
 ggsave(tail(.args, 1), rel_plot, bg = "white", width = 12, height = 6)
