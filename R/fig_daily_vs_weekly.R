@@ -9,7 +9,7 @@ library(ggplot2)
             file.path("local", "data", "daily_%s.rds"),
             file.path("local", "data", "weekly_%s.rds"),
             file.path("local", "figures", "daily_vs_weekly_%s.png")
-        )
+        ), .prov
     )} else commandArgs(trailingOnly = TRUE)
 
 daily_dt <- readRDS(.args[1])

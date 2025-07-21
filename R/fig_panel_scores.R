@@ -64,7 +64,7 @@ cases_plt <- ggplot() +
 	) +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y")
 
-cases_plt
+if (interactive()) print(cases_plt)
 
 ##########
 # Scores
@@ -72,16 +72,17 @@ cases_plt
 # scores plot
 score_plt <-
     # First make a layer with all dates present
-    ggplot(data = daily_cases) +
+    ggplot() +
     geom_blank(
-        aes(x = date, y = max(confirm))
+        aes(x = date, y = NULL), data = daily_cases
     ) +
     # Now add the scores data
 	geom_line(
 	    data = scores[, type := forecast],
 	    aes(x = date,
 	        y = crps,
-	        color = type
+	        color = type,
+	        group = interaction(type, slide)
 	    )
 	) +
     geom_point(
@@ -102,8 +103,7 @@ score_plt <-
          color = "Forecast target"
     )
 
-score_plt
-
+if (interactive()) print(score_plt)
 
 # Patchwork
 panel_fig <- (cases_plt / score_plt) &
