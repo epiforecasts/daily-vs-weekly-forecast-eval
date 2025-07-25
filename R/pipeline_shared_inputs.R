@@ -191,7 +191,7 @@ control_opts <- list(
 stan <- stan_opts(
     samples = 5000,
     control = control_opts,
-    cores = parallel::detectCores() - 1,
+    cores = min(parallel::detectCores() - 1, 4),
     backend = if (require(cmdstanr)) "cmdstanr" else "rstan"
 )
 
