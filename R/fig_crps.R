@@ -4,15 +4,18 @@ library(ggh4x)
 library(geomtextpath)
 library(patchwork)
 
+# data = observation resolution
+# forecast = training data resolution
+
 .args <- if (interactive()) c(
-    file.path("local", "output", "score_GP.rds"), # scores
+    file.path("debug", "output", "score_GP.rds"), # scores
     file.path("local", "figures", "score_scatter_GP.png") # diagnostics
 ) else commandArgs(trailingOnly = TRUE)
 
 # Scores
 scores <- readRDS(.args[1])
 ## TODO currently aggregating scores via mean - probably just keep the actual dates?
-scores[data == "daily" & forecast == "daily", date := date - 6 ]
+# scores[data == "daily" & forecast == "daily", date := date - 6 ]
 # scores[forecast != "rescale", slide := slide / 14L]
 # scores[forecast == "rescale", slide := slide / 14L]
 
@@ -65,7 +68,7 @@ score_plt <- ggplot(data = scores) +
   	axis.text.x = element_text(hjust = 0, vjust = 2),
   	strip.placement = "outside"
   ) +
-  labs(y = NULL, linetype = "Data", color = "Forecast scale")
+  labs(y = NULL, linetype = "Data", color = "Forecast Training\nData Resolution")
 
 scores_ref <- scores[forecast == "daily"][, .SD, .SDcols = -c("forecast")]
 

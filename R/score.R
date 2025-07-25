@@ -4,10 +4,11 @@ library(scoringutils)
 
 .args <- if (interactive()) {
 	.prov <- "GP"
+	.dir <- "debug"
 	.tmp <- c(
 	  sprintf(file.path("local", "data", "%s_%s.rds"), c("daily", "weekly"), .prov),
-	  sprintf(file.path("local", "output", "forecast_%s_%s.rds"), c("daily", "weekly", "rescale"), .prov),
-	  sprintf(file.path("local", "output", "score_%s.rds"), .prov)
+	  sprintf(file.path(.dir, "output", "forecast_%s_%s.rds"), c("daily", "weekly", "special"), .prov),
+	  sprintf(file.path(.dir, "output", "score_%s.rds"), .prov)
 	)
 	c(.tmp[1:length(.tmp) - 1],
 	  file.path("./R/pipeline_shared_inputs.R"),
