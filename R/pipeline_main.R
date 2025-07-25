@@ -5,10 +5,10 @@ library(parallel)
 library(bayesplot)
 
 .args <- if (interactive()) {
-    .scale <- "weekly"
+    .scale <- "daily"
     .prov <- "GP"
     .tmp <- sprintf(file.path(
-        "local", c("data", "output"),
+        c("local/data", "debug/output"),
         c("%s_%s.rds", "forecast_%s_%s.rds")
     ),
     .scale,
@@ -55,7 +55,7 @@ rt_prior <- LogNormal(meanlog = 0.69, sdlog = 0.05)
 
 # Check if forecasting is being done for daily data or weekly. Will be used to
 # turn on/off week effect below; week effect is off for the weekly accumulated data.
-is_daily <- sub("//_*", "", basename(.args[1])) == "daily"
+is_daily <- sub("_.*", "", basename(.args[1])) == "daily"
 
 ####################################
 # Observation model
@@ -70,11 +70,14 @@ obs <- obs_opts(
 # Pipeline
 ###############################
 # Prepare data
-dt <- readRDS(.args[1])[, .(date = as.Date(date), confirm)][!is.na(confirm)]
+dt <- readRDS(.args[1])[, .(date = as.Date(date), confirm)]
+
+if (!is_daily) dt <- dt[!is.na(confirm)]
 
 # Fill missing dates
 dt_complete <- fill_missing(
-    dt, missing_dates = "accumulate", missing_obs = "accumulate"
+    dt, missing_dates = "accumulate", missing_obs = "accumulate",
+    initial_accumulate = if (is_daily) 1 else 7
 )
 
 # Slides for fitting
@@ -84,7 +87,7 @@ slides <- seq(0, dt_complete[, .N - (train_window + test_window)], by = test_win
 res_dt <- lapply(slides, \(slide) {
 	slice <- dt_complete[seq_len(train_window) + slide] |> trim_leading_zero()
 	if (slice[, .N > (test_window * 2)]) {
-	   # diagnostics place holder to guarantee entry into while
+	    # diagnostics place holder to guarantee entry into while
 	    diagnostics <- data.table(
 	        divergent_transitions = 20,
 	        ess_bulk = 200,
@@ -104,7 +107,7 @@ res_dt <- lapply(slides, \(slide) {
 				data = slice,
 				generation_time = generation_time_opts(generation_time),
 				delays = delay_opts(delay),
-				rt = rt_opts(prior = rt_prior),
+				rt = if (!interactive()) rt_opts(prior = rt_prior),
 				forecast = forecast_opts(horizon = test_window, accumulate = 1),
 				obs = obs,
 				stan = next_stan
@@ -112,9 +115,7 @@ res_dt <- lapply(slides, \(slide) {
 
 			# Extract the diagnostic information
 			diagnostics <- get_rstan_diagnostics(out$estimates$fit)
-			last_run_time <- sum(
-				rstan::get_elapsed_time(out$estimates$fit)
-			)
+			last_run_time <- elapsed_time(out$estimates$fit)
 			stan_elapsed_time <- stan_elapsed_time + last_run_time
 			crude_run_time <- crude_run_time + out$timing
 			next_stan <- ratchet_control(next_stan)
@@ -123,7 +124,7 @@ res_dt <- lapply(slides, \(slide) {
 		forecasts <- out$estimates$samples[
 			variable == "reported_cases" & type == "forecast",
 			.(date, sample, value, slide = slide)
-			]
+		]
 
 		diagnostics <- diagnostics[, slide := slide]
 		diagnostics <- diagnostics[, stan_elapsed_time := stan_elapsed_time]

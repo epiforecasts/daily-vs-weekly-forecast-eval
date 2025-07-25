@@ -81,7 +81,7 @@ trim_leading_zero <- function (init_dt) {
 #'
 #' @return A data.table containing the summarised diagnostics
 get_rstan_diagnostics <- function(fit) {
-	if (inherits(fit, "stanfit")) {
+	if (inherits(fit, "stanfit") | inherits(fit, "CmdStanFit")) {
 		np <- bayesplot::nuts_params(fit)
 		divergent_indices <- np$Parameter == "divergent__"
 		treedepth_indices <- np$Parameter == "treedepth__"
@@ -110,7 +110,7 @@ get_rstan_diagnostics <- function(fit) {
 		diagnostics[, no_at_max_treedepth :=
 									sum(np[treedepth_indices, ]$Value == max_treedepth)
 		][, per_at_max_treedepth := no_at_max_treedepth / samples]
-	} else{
+	} else {
 		diagnostics <- data.table(
 			"samples" = NA,
 			"max_rhat" = NA,
@@ -127,6 +127,14 @@ get_rstan_diagnostics <- function(fit) {
 	return(diagnostics[])
 }
 
+elapsed_time <- function(fit) {
+    if (inherits(fit, "stanfit")) {
+        rstan::get_elapsed_time(fit) |> apply(1, sum) |> max()
+    } else if (inherits(fit, "CmdStanFit")) {
+        fit$time()$chains[, c("warmup", "sampling")] |> apply(1, sum) |> max()
+    } else stop("error in get elapsed_time")
+}
+
 #' Define new parameter values for tuning the model
 #'
 #' @param stan_cfg Current stan parameter values
@@ -135,12 +143,14 @@ get_rstan_diagnostics <- function(fit) {
 #' @export
 #'
 #' @examples
-ratchet_control <- function(stan_cfg) within(stan_cfg, {
+ratchet_control <- function(stan_cfg) if (stan_cfg$backend == "rstan") within(stan_cfg, {
     control <- within(control, {
         # "Increasing adapt_delta beyond 0.99 and max_treedepth beyond 12 is seldom useful." (Source: https://mc-stan.org/learn-stan/diagnostics-warnings.html#bulk-and-tail-ess)
         adapt_delta <- min(0.990, adapt_delta + (1 - adapt_delta) * 0.25)
     })
-})
+}) else if (stan_cfg$backend == "cmdstanr") within(stan_cfg, {
+    adapt_delta <- min(0.990, adapt_delta + (1 - adapt_delta) * 0.25)
+}) else stop("backend error")
 
 #' Load forecasts, diagnostics, or timings, bind by row, and add the type id
 #' as a column
@@ -181,7 +191,8 @@ control_opts <- list(
 stan <- stan_opts(
     samples = 5000,
     control = control_opts,
-    cores = parallel::detectCores() - 1
+    cores = parallel::detectCores() - 1,
+    backend = if (require(cmdstanr)) "cmdstanr" else "rstan"
 )
 
 # Train and forecast windows for rescaled data
