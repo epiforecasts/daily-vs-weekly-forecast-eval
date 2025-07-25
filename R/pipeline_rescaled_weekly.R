@@ -8,7 +8,7 @@ library(bayesplot)
     .tmp <- sprintf(
         c(
             "local/data/weekly_%s.rds",
-            "local/output/forecast_special_%s.rds"
+            "debug/output/forecast_special_%s.rds"
             ),
         .prov
     )
@@ -110,9 +110,7 @@ res_dt <- lapply(slides, \(slide) {
 
             # Extract the diagnostic information
             diagnostics <- get_rstan_diagnostics(out$estimates$fit)
-            last_run_time <- sum(
-                rstan::get_elapsed_time(out$estimates$fit)
-            )
+            last_run_time <- elapsed_time(out$estimates$fit)
             stan_elapsed_time <- stan_elapsed_time + last_run_time
             crude_run_time <- crude_run_time + out$timing
             next_stan <- ratchet_control(next_stan)
