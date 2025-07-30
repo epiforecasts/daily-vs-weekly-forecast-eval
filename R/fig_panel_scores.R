@@ -19,7 +19,7 @@ library(patchwork)
         ),
         .prov)
     c(.tmp[1:length(.tmp) - 1],
-      file.path("./R/pipeline_shared_inputs.R"),
+      file.path("R", "pipeline_shared_inputs.R"),
       .tmp[length(.tmp)]
     )
 } else commandArgs(trailingOnly = TRUE)
