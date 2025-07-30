@@ -89,7 +89,8 @@ score_plt <-
         aes(x = date,
             y = crps,
             color = type
-        )
+        ),
+        size = 0.5
     ) +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
     scale_y_log10() +
