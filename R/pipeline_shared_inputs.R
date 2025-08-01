@@ -83,32 +83,29 @@ trim_leading_zero <- function (init_dt) {
 get_rstan_diagnostics <- function(fit) {
 	if (inherits(fit, "stanfit") | inherits(fit, "CmdStanFit")) {
 		np <- bayesplot::nuts_params(fit)
-		divergent_indices <- np$Parameter == "divergent__"
-		treedepth_indices <- np$Parameter == "treedepth__"
-		# Calculating ESS (basic, bulk, and tail)
-		# ESS can only be calculated on the extracted variable in the form of a matrix with dimensions iterations x chains
-		# Extract the infections variable as that is used for forecasting
-		reports_posterior <- posterior::extract_variable_array(
-		    posterior::as_draws_array(fit),
-		    "reports" # NB: NEEDS REVIEW; is it rather infections??
-		)
+		divergence_data <- subset(np, Parameter == "divergent__")
+		treedepth_data <- subset(np, Parameter == "treedepth__")
+		posterior_summary <- posterior::summarize_draws(
+		    fit, c(posterior::default_convergence_measures(), "ess_basic")
+		) |> subset(variable != "lp__")
+
 		# Calculate the different types of ess (basic, bulk, and tail)
-		fit_ess_basic <- posterior::ess_basic(reports_posterior)
-		fit_ess_bulk <- posterior::ess_bulk(reports_posterior)
-		fit_ess_tail <- posterior::ess_tail(reports_posterior)
+		fit_ess_basic <- min(posterior_summary$ess_basic, na.rm = TRUE)
+		fit_ess_bulk <- min(posterior_summary$ess_bulk, na.rm = TRUE)
+		fit_ess_tail <- min(posterior_summary$ess_tail, na.rm = TRUE)
 
 		diagnostics <- data.table(
 			"samples" = nrow(np) / length(unique(np$Parameter)),
-			"max_rhat" = round(max(bayesplot::rhat(fit), na.rm = TRUE), 3),
-			"divergent_transitions" = sum(np[divergent_indices, ]$Value),
-			"per_divergent_transitions" = mean(np[divergent_indices, ]$Value),
-			"max_treedepth" = max(np[treedepth_indices, ]$Value),
+			"max_rhat" = round(max(posterior_summary$rhat, na.rm = TRUE), 3),
+			"divergent_transitions" = sum(divergence_data$Value),
+			"per_divergent_transitions" = mean(divergence_data$Value),
+			"max_treedepth" = max(treedepth_data$Value),
 			"ess_basic" = fit_ess_basic,
 			"ess_bulk" = fit_ess_bulk,
 			"ess_tail" = fit_ess_tail
 		)
 		diagnostics[, no_at_max_treedepth :=
-									sum(np[treedepth_indices, ]$Value == max_treedepth)
+									sum(treedepth_data$Value == max_treedepth)
 		][, per_at_max_treedepth := no_at_max_treedepth / samples]
 	} else {
 		diagnostics <- data.table(
@@ -224,5 +221,18 @@ test_window <- 7*2
 #
 # steps
 # adapt_delta_vec
-divergent_transitions_limit <- 2
-ratchets_limit <- 11
+# divergent_transitions_limit <- 0.0025 # .25 percent of the samples
+# ratchets_limit <- 11
+
+keep_running <- function(
+    dgn, rs, dlimit = 5000 * 0.0025, rlimit = 11, rhatlim = 1.01, essmin = 100
+) {
+
+    passingmcmc <- c(
+        dgn$divergent_transitions < dlimit,
+        dgn$rhat < rhatlim,
+        dgn$ess_tail > essmin
+    ) |> sum()
+
+    (passingmcmc < 2) && (rs < rlimit)
+}
