@@ -8,7 +8,7 @@ library(patchwork)
 # forecast = training data resolution
 
 .args <- if (interactive()) c(
-    file.path("debug", "output", "score_GP.rds"), # scores
+    file.path("local", "output", "score_GP.rds"), # scores
     file.path("local", "figures", "score_scatter_GP.png") # diagnostics
 ) else commandArgs(trailingOnly = TRUE)
 

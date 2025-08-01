@@ -85,16 +85,15 @@ res_dt <- lapply(slides, \(slide) {
     if (slice[, .N > test_window_rescaled * 2]) {
         # diagnostics place holder to guarantee entry into while
         diagnostics <- data.table(
-            divergent_transitions = 20,
-            ess_bulk = 200,
+            divergent_transitions = 0.1 * stan$iter_sampling * stan$chains,
+            ess_bulk = 20,
             rhat = 2
-        )
+        ) # place holder to guarantee entry into while
         ratchets <- -1
         next_stan <- stan
         stan_elapsed_time <- 0
         crude_run_time <- 0
-        while (diagnostics$divergent_transitions > divergent_transitions_limit &&
-               ratchets < ratchets_limit) {
+        while (keep_running(diagnostics, ratchets)) {
             # The first ratchet counts as 0
             ratchets <- ratchets + 1
             # fit the model
