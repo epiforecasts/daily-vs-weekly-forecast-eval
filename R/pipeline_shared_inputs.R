@@ -225,7 +225,7 @@ test_window <- 7*2
 # ratchets_limit <- 11
 
 keep_running <- function(
-    dgn, rs, dlimit = 5000 * 0.0025, rlimit = 11, rhatlim = 1.01, essmin = 100
+    dgn, rs, dlimit = ceiling(5000 * 0.0025), rlimit = 11, rhatlim = 1.01, essmin = 100
 ) {
 
     passingmcmc <- c(
