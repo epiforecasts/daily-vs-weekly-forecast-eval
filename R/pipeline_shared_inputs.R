@@ -231,7 +231,7 @@ keep_running <- function(
     passingmcmc <- c(
         dgn$divergent_transitions < dlimit,
         dgn$rhat < rhatlim,
-        dgn$ess_tail > essmin
+        dgn$ess_bulk >= essmin
     ) |> sum()
 
     (passingmcmc < 2) && (rs < rlimit)
