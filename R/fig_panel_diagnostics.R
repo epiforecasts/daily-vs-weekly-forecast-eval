@@ -77,7 +77,7 @@ cases_plt <- ggplot() +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
-cases_plt
+if (interactive()) print(cases_plt)
 
 # Ratchets
 ratchets_plot <- ggplot(data = daily_cases) +
@@ -149,7 +149,7 @@ diagnostics_plt <-
     ) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-diagnostics_plt
+if (interactive()) print(diagnostics_plt)
 
 panel_fig <- (cases_plt/diagnostics_plt/ratchets_plot) &
     # plot_layout(ncol = 1, guides = "collect", axes = "collect_x") &
