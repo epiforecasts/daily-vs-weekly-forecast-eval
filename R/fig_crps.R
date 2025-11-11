@@ -104,9 +104,9 @@ rel_plot <- ggplot(data = scores_rel[slide_counts, on = .(data)]) +
     geom_text(aes(x = 1.25, y = ratio, label = perf), \(dt) dt[, .(ratio = c(10, 1/10), perf = c("worse", "better"))], vjust = 0.5, hjust = 0) +
     coord_cartesian(ylim = 10^c(-2.5, 4), xlim = c(1, 4.75), expand = FALSE) +
     scale_x_continuous(NULL, breaks = 2:4, labels = c(
-        "vs. Weekly Training, Daily Test",
+        "vs. Aggregated Weekly Training, Daily Test",
         "vs. Weekly Scale, Weekly Test",
-        "vs. Weekly Training, Weekly Test"
+        "vs. Aggregated Weekly Training, Weekly Test"
     )) +
     #scale_x_discrete(
     #    NULL,
