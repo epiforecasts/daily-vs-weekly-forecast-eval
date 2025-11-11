@@ -7,10 +7,13 @@ library(patchwork)
 # data = observation resolution
 # forecast = training data resolution
 
-.args <- if (interactive()) c(
-    file.path("local", "output", "score_GP.rds"), # scores
-    file.path("local", "figures", "score_scatter_GP.png") # diagnostics
-) else commandArgs(trailingOnly = TRUE)
+.args <- if (interactive()) {
+    .prov <- "GP"
+    sprintf(c(
+        file.path("local", "output", "score_%s.rds"), # scores
+        file.path("local", "figures", "score_scatter_%s.png") # diagnostics
+    ), .prov)
+} else commandArgs(trailingOnly = TRUE)
 
 # Scores
 scores <- readRDS(.args[1])
@@ -61,7 +64,9 @@ score_plt <- ggplot(data = scores) +
   	labels = \(b) sprintf("%s%s", monthlabs[month(b)], yearextract(b)),
   	minor_breaks = NULL, expand = c(0, 0)
   ) +
-  scale_y_log10(labels = \(b) parse(text = sprintf("10^%i", as.integer(log10(b))))) +
+  scale_y_log10(
+  #    labels = \(b) parse(text = sprintf("10^%i", as.integer(log10(b))))
+  ) +
   scale_color_brewer(guide = "none", na.translate = FALSE, palette = "Dark2") +
   theme_minimal() +
   theme(
@@ -98,14 +103,20 @@ rel_plot <- ggplot(data = scores_rel[slide_counts, on = .(data)]) +
     ) +
     geom_text(aes(x = 1.25, y = ratio, label = perf), \(dt) dt[, .(ratio = c(10, 1/10), perf = c("worse", "better"))], vjust = 0.5, hjust = 0) +
     coord_cartesian(ylim = 10^c(-2.5, 4), xlim = c(1, 4.75), expand = FALSE) +
-    scale_x_discrete(
-        NULL, label = \(b) lapply(
-            strsplit(b,".",fixed = TRUE),
-            \(spl) sprintf("%s data => %s target", spl[1], spl[2])
-        )
-    ) +
+    scale_x_continuous(NULL, breaks = 2:4, labels = c(
+        "vs. Weekly Training, Daily Test",
+        "vs. Weekly Scale, Weekly Test",
+        "vs. Weekly Training, Weekly Test"
+    )) +
+    #scale_x_discrete(
+    #    NULL,
+        #label = \(b) lapply(
+        #    strsplit(b,".",fixed = TRUE),
+        #    \(spl) sprintf("%s data => %s target", spl[1], spl[2])
+        #)
+    #) +
     scale_y_continuous(
-        "relative CRPS",
+        "relative CRPS against training on Daily data",
         transform = "log10",
         breaks = 10^c(-2:4), minor_breaks = NULL,
         labels = \(b) fifelse(b < 1, sprintf("1/%ix", as.integer(1/b)), sprintf("%ix", as.integer(b)))
