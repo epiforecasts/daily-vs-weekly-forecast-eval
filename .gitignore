@@ -19,3 +19,8 @@ network
 renv/*
 !renv/activate.R
 !renv/settings.json
+
+# Paper rendering artifacts
+paper/*.tex
+paper/*.bst
+paper/.claude/
