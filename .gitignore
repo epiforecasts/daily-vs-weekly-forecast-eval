@@ -23,4 +23,6 @@ renv/*
 # Paper rendering artifacts
 paper/*.tex
 paper/*.bst
-paper/.claude/
+
+# Claude Code artifacts
+.claude/
