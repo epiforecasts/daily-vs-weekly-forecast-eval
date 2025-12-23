@@ -1,5 +1,5 @@
 ---
-title: "Epidemiological Forecasting Using Daily versus Weekly Aggregated Data: Computational and Practical Implications"
+title: "Epidemiological forecasting using daily versus weekly aggregated data: Computational and practical implications"
 format:
   plos-pdf:
     number-sections: false
