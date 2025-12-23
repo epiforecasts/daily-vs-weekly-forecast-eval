@@ -137,4 +137,16 @@ all_panel_figs: all_scores_panel_figs all_diagnostics_panel_figs
 
 test: ${FIGDIR}/fig_panel_scores_${ONEPROV}.png ${FIGDIR}/fig_panel_diagnostics_${ONEPROV}.png
 
+# Paper rendering
+PAPERDIR := paper
+PAPERSRC := ${PAPERDIR}/paper.qmd
+PAPEROUT := ${PAPERDIR}/paper.pdf
+
+${PAPEROUT}: ${PAPERSRC} ${PAPERDIR}/bibliography.bib
+	cd ${PAPERDIR} && quarto render paper.qmd
+
+paper: ${PAPEROUT}
+
+.PHONY: paper
+
 endrule: all_scores_panel_figs
