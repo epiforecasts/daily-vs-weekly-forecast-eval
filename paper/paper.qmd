@@ -129,7 +129,7 @@ We plotted a time series of the CRPS and ESS/sec alongside the time series of lo
 
 The analysis used COVID-19 data from South Africa. The code for the analysis is available at https://github.com/epiforecasts/daily-vs-weekly-forecast-eval.
 
-All analyses were done with R version 4.5.1 [@r_core_team_r_2025] and orchestrated with GNU make [@noauthor_gnu_2006]. The SARS-COV-2 incubation period was obtained from the epiparameter R package v0.4.1.900 [@lambert_epiparameter_2025], which stores a database of literature parameter estimates.
+All analyses were done with R version 4.5.1 [@r_core_team_r_2025] and orchestrated with GNU make [@noauthor_gnu_2006]. The SARS-CoV-2 incubation period was obtained from the epiparameter R package v0.4.1.900 [@lambert_epiparameter_2025], which stores a database of literature parameter estimates.
 
 # Results
 
