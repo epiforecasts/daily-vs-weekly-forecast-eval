@@ -1,5 +1,7 @@
 # Daily versus Weekly Data in Epidemiological Forecasting: Computational and Practical Implications
 
+> **📄 View latest paper version [here](https://github.com/jamesmbaazam/daily-vs-weekly-forecast-eval/blob/main/paper/paper.pdf)**
+
 ## Background
 
 We evaluated the predictive and computational tradeoffs of forecasting COVID-19 infections using daily vs. weekly case data in South Africa. Using a recent forecast accumulation feature modelling aggregated data in the [EpiNow2](https://epiforecasts.io/EpiNow2/) modelling framework, we compared forecast accuracy and efficiency. While daily data produced better fits overall, similar performance can be achieved with weekly data, albeit with greater computational tradeoffs. We outline a workflow to achieve comparable model fits across temporal resolutions. These findings are context-dependent and must be balanced against the value of timely, accurate public health decisions.
