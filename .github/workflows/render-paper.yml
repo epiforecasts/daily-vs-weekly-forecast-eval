@@ -1,0 +1,54 @@
+name: Render Paper
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'paper/**'
+      - '.github/workflows/render-paper.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'paper/**'
+  workflow_dispatch:
+
+jobs:
+  render-paper:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 'release'
+
+      - name: Install TinyTeX
+        run: quarto install tinytex
+
+      - name: Render paper
+        run: |
+          cd paper
+          quarto render paper.qmd
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-pdf
+          path: paper/paper.pdf
+          retention-days: 30
+
+      - name: Commit rendered PDF (main branch only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add paper/paper.pdf
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-render paper [skip ci]" && git push)
