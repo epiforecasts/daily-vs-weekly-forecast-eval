@@ -30,3 +30,10 @@ paper/*.bst
 # Local AI assistant artifacts
 .gemini/
 GEMINI.md
+
+# Quarto HTML render artifacts
+paper/paper.html
+paper/paper_files/
+
+# Local diagram render artifact
+paper/analysis_pipeline.pdf
