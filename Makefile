@@ -138,7 +138,7 @@ all_scores_panel_figs: $(patsubst %,${FIGDIR}/fig_panel_scores_%.png,${PROVINCES
 all_diagnostics_panel_figs: $(patsubst %,${FIGDIR}/fig_panel_diagnostics_%.png,${PROVINCES} RSA)
 all_dvsw_figs: $(patsubst %,${FIGDIR}/daily_vs_weekly_%.png,${PROVINCES})
 all_crps_figs: $(patsubst %,${FIGDIR}/score_scatter_%.png,${PROVINCES} RSA)
-all_crps_summary_fig: ${FIGDIR}/fig_crps_summary_all_provs.png
+all_provs_crps_summary_fig: ${FIGDIR}/fig_crps_summary_all_provs.png
 
 # Combined target for all panel figures
 all_panel_figs: all_scores_panel_figs all_diagnostics_panel_figs
