@@ -8,12 +8,12 @@ library(patchwork)
 # forecast = training data resolution
 
 .args <- if (interactive()) {
-    .prov <- "GP"
-    sprintf(c(
-        file.path("local", "output", "score_%s.rds"), # scores
-        file.path("local", "figures", "score_scatter_%s.png") # diagnostics
+  .prov <- "GP"
+  sprintf(c(
+    file.path("local", "output", "score_%s.rds"), # scores
+    file.path("local", "figures", "score_scatter_%s.png") # diagnostics
     ), .prov)
-} else commandArgs(trailingOnly = TRUE)
+} else {commandArgs(trailingOnly = TRUE)}
 
 # Scores
 scores <- readRDS(.args[1])
@@ -78,7 +78,7 @@ score_plt <- ggplot(data = scores) +
 scores_ref <- scores[forecast == "daily"][, .SD, .SDcols = -c("forecast")]
 
 scores_rel <- scores[forecast != "daily"][scores_ref, on = .(slide, date, data), nomatch = 0]
-scores_rel[, pos := 1:.N, by = .(data, forecast)]
+scores_rel[, pos := seq_len(.N), by = .(data, forecast)]
 
 rel_plot <- ggplot(data = scores_rel[slide_counts, on = .(data)]) +
     aes(
