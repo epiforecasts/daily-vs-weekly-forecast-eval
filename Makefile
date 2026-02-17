@@ -104,6 +104,12 @@ ${FIGDIR}/fig_panel_diagnostics_%.png: \
 	${SHARED_INPUTS} | ${FIGDIR}
 	$(call R)
 
+${FIGDIR}/score_scatter_%.png: R/fig_crps.R ${OUTDIR}/score_%.rds | ${FIGDIR}
+	$(call R)
+
+${FIGDIR}/fig_crps_summary_all_provs.png: R/fig_crps_summary_all_provs.R ${OUTDIR}
+	$(call R)
+
 # pattern = some province
 DAILYDAT_PAT = ${DATDIR}/daily_%.rds
 WEEKLYDAT_PAT = ${DATDIR}/weekly_%.rds
@@ -131,6 +137,8 @@ all_scores: $(patsubst %,${OUTDIR}/score_%.rds,${PROVINCES} RSA)
 all_scores_panel_figs: $(patsubst %,${FIGDIR}/fig_panel_scores_%.png,${PROVINCES} RSA)
 all_diagnostics_panel_figs: $(patsubst %,${FIGDIR}/fig_panel_diagnostics_%.png,${PROVINCES} RSA)
 all_dvsw_figs: $(patsubst %,${FIGDIR}/daily_vs_weekly_%.png,${PROVINCES})
+all_crps_figs: $(patsubst %,${FIGDIR}/score_scatter_%.png,${PROVINCES} RSA)
+all_crps_summary_fig: ${FIGDIR}/fig_crps_summary_all_provs.png
 
 # Combined target for all panel figures
 all_panel_figs: all_scores_panel_figs all_diagnostics_panel_figs
