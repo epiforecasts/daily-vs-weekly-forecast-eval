@@ -6,6 +6,7 @@ local.makefile
 .Ruserdata
 
 local/*
+!local/figures/
 network/*
 network
 
