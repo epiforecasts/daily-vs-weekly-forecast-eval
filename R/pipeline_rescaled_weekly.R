@@ -87,7 +87,7 @@ res_dt <- lapply(slides, \(slide) {
         diagnostics <- data.table(
             divergent_transitions = 0.1 * stan$iter_sampling * stan$chains,
             ess_bulk = 20,
-            rhat = 2
+            max_rhat = 2
         ) # place holder to guarantee entry into while
         ratchets <- -1
         next_stan <- stan
@@ -165,8 +165,7 @@ res_dt <- lapply(slides, \(slide) {
                 "per_at_max_treedepth" = NA_integer_,
                 "ess_basic" = NA_integer_,
                 "ess_bulk" = NA_integer_,
-                "ess_tail" = NA_integer_,
-                "rhat" = NA_integer_
+                "ess_tail" = NA_integer_
             ))
         )
     }
