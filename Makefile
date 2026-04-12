@@ -155,6 +155,18 @@ ${PAPEROUT}: ${PAPERSRC} ${PAPERDIR}/bibliography.bib
 
 paper: ${PAPEROUT}
 
-.PHONY: paper
+# Supplementary materials rendering
+SUPPSRC := ${PAPERDIR}/supplementary.qmd
+SUPPOUT := ${PAPERDIR}/supplementary.pdf
+
+${SUPPOUT}: ${SUPPSRC} all_panel_figs
+	cd ${PAPERDIR} && quarto render supplementary.qmd
+
+supplementary: ${SUPPOUT}
+
+# Combined paper + supplementary target
+manuscripts: paper supplementary
+
+.PHONY: paper supplementary manuscripts
 
 endrule: all_scores_panel_figs

@@ -1,0 +1,8 @@
+{
+  "general": {
+    "previewFeatures": true
+  },
+  "experimental": {
+    "plan": true
+  }
+}
