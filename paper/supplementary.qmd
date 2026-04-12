@@ -1,15 +1,55 @@
 ---
 title: "Supplementary Materials: Evaluating epidemiological forecasts using daily versus weekly aggregated data"
 format:
-  pdf:
+  plos-pdf:
     number-sections: false
-    toc: false
-    geometry:
-      - margin=1in
+    journal:
+      id: plosone
     include-in-header:
       text: |
         \usepackage{float}
         \floatplacement{figure}{H}
+author:
+  - name: James Mba Azam
+    affiliations:
+      - ref: aff1
+      - ref: aff2
+    email: james.azam@lshtm.ac.uk
+    corresponding: true
+  - name: Sam Abbott
+    affiliations:
+      - ref: aff1
+  - name: Tumelo Sereo
+    affiliations:
+      - ref: aff2
+  - name: Tobi Awodumila
+    affiliations:
+      - ref: aff3
+  - name: Sebastian Funk
+    affiliations:
+      - ref: aff1
+  - name: Carl Pearson
+    affiliations:
+      - ref: aff2
+      - ref: aff4
+affiliations:
+  - id: aff1
+    name: Center for Mathematical Modelling of Infectious Diseases, London School of Hygiene & Tropical Medicine
+    city: London
+    country: United Kingdom
+  - id: aff2
+    name: South African Center of Excellence for Epidemiological Modelling and Analysis, Stellenbosch University
+    city: Cape Town
+    country: South Africa
+  - id: aff3
+    name: African Institute for Mathematical Sciences
+    city: Cape Town
+    country: South Africa
+  - id: aff4
+    name: University of North Carolina
+    city: Chapel Hill
+    state: North Carolina
+    country: United States
 bibliography: bibliography.bib
 ---
 

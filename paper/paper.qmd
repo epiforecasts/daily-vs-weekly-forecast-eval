@@ -16,7 +16,7 @@ author:
   - name: James Mba Azam
     affiliations:
       - ref: aff1
-      - ref: aff4
+      - ref: aff2
     email: james.azam@lshtm.ac.uk
     corresponding: true
   - name: Sam Abbott
