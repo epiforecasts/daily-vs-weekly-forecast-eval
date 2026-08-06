@@ -4,19 +4,22 @@ library(parallel)
 library(bayesplot)
 
 .args <- if (interactive()) {
-    .prov <- "GP"
-    .tmp <- sprintf(
-        c(
-            "local/data/weekly_%s.rds",
-            "debug/output/forecast_special_%s.rds"
-            ),
-        .prov
-    )
-    c(.tmp[1:length(.tmp) - 1],
-      file.path("R", "pipeline_shared_inputs.R"),
-      .tmp[length(.tmp)]
-    )
-} else commandArgs(trailingOnly = TRUE)
+  .prov <- "GP"
+  .tmp <- sprintf(
+    c(
+      "local/data/weekly_%s.rds",
+      "debug/output/forecast_special_%s.rds"
+    ),
+    .prov
+  )
+  c(
+    .tmp[1:length(.tmp) - 1],
+    file.path("R", "pipeline_shared_inputs.R"),
+    .tmp[length(.tmp)]
+  )
+} else {
+  commandArgs(trailingOnly = TRUE)
+}
 
 # Load helper functions and shared model inputs
 source(.args[length(.args) - 1])
@@ -73,120 +76,131 @@ fake_daily_dates <- seq.Date(
 dt$date <- fake_daily_dates
 
 # Slides for fitting
-slides <- seq(0, dt[, .N - (train_window_rescaled + test_window_rescaled)], by = test_window_rescaled)
+slides <- seq(
+  0,
+  dt[, .N - (train_window_rescaled + test_window_rescaled)],
+  by = test_window_rescaled
+)
 
 # Fit models
 res_dt <- lapply(slides, \(slide) {
-    slice <- dt[seq_len(train_window_rescaled) + slide] |> trim_leading_zero()
-    # Slides for fitting are in weeks but we need to rescale back to
-    # days for aligning with other scales
-    slide_rescaled <- slide * 7
-    # Fit model
-    if (slice[, .N > test_window_rescaled * 2]) {
-        # diagnostics place holder to guarantee entry into while
-        diagnostics <- data.table(
-            divergent_transitions = 0.1 * stan$iter_sampling * stan$chains,
-            ess_bulk = 20,
-            max_rhat = 2
-        ) # place holder to guarantee entry into while
-        ratchets <- -1
-        next_stan <- stan
-        stan_elapsed_time <- 0
-        crude_run_time <- 0
-        while (keep_running(diagnostics, ratchets)) {
-            # The first ratchet counts as 0
-            ratchets <- ratchets + 1
-            # fit the model
-            out <- epinow(
-                data = slice,
-                generation_time = generation_time_opts(generation_time),
-                delays = delay_opts(delay),
-                rt = rt_opts(prior = rt_prior),
-                forecast = forecast_opts(horizon = test_window_rescaled),
-                obs = obs,
-                stan = next_stan
-            )
+  slice <- dt[seq_len(train_window_rescaled) + slide] |> trim_leading_zero()
+  # Slides for fitting are in weeks but we need to rescale back to
+  # days for aligning with other scales
+  slide_rescaled <- slide * 7
+  # Fit model
+  if (slice[, .N > test_window_rescaled * 2]) {
+    # diagnostics place holder to guarantee entry into while
+    diagnostics <- data.table(
+      divergent_transitions = 0.1 * stan$iter_sampling * stan$chains,
+      ess_bulk = 20,
+      max_rhat = 2
+    ) # place holder to guarantee entry into while
+    ratchets <- -1
+    next_stan <- stan
+    stan_elapsed_time <- 0
+    crude_run_time <- 0
+    while (keep_running(diagnostics, ratchets)) {
+      # The first ratchet counts as 0
+      ratchets <- ratchets + 1
+      # fit the model
+      out <- epinow(
+        data = slice,
+        generation_time = generation_time_opts(generation_time),
+        delays = delay_opts(delay),
+        rt = rt_opts(prior = rt_prior),
+        forecast = forecast_opts(horizon = test_window_rescaled),
+        obs = obs,
+        stan = next_stan
+      )
 
-            # Extract the diagnostic information
-            diagnostics <- get_rstan_diagnostics(out$estimates$fit)
-            last_run_time <- elapsed_time(out$estimates$fit)
-            stan_elapsed_time <- stan_elapsed_time + last_run_time
-            crude_run_time <- crude_run_time + out$timing
-            next_stan <- ratchet_control(next_stan)
-        }
-
-        # Extract the forecast cases
-        forecasts <- out$estimates$samples[
-            variable == "reported_cases" & type == "forecast",
-            .(date, sample, value, slide = slide_rescaled)
-        ]
-
-        diagnostics <- diagnostics[, slide := slide_rescaled]
-        diagnostics <- diagnostics[, stan_elapsed_time := stan_elapsed_time]
-        #  NB: NEEDS REVIEW: Currently computes total time taken for warmup and sampling for all chains.
-
-        # Combine the forecast, timing and diagnostics
-        res_dt <- data.table(
-            forecast = list(forecasts),
-            timing = list(
-                data.table(
-                    slide = slide_rescaled,
-                    crude_run_time = crude_run_time,
-                    stan_elapsed_time = stan_elapsed_time,
-                    keep_run_time = last_run_time,
-                    ratchets = ratchets
-                )
-            ),
-            diagnostics = list(diagnostics)
-        )
-        res_dt
-    } else {
-        empty_forecast <- data.table(
-            date = dt[train_window_rescaled + slide, date + seq_len(test_window_rescaled)],
-            sample = NA_integer_, value = NA_integer_, slide = slide_rescaled
-        )
-        data.table(
-            forecast = list(empty_forecast),
-            timing = list(data.table(
-                slide = slide_rescaled,
-                crude_run_time = lubridate::as.duration(NA),
-                stan_elapsed_time = lubridate::as.duration(NA),
-                keep_run_time = lubridate::as.duration(NA),
-                ratchets = NA_integer_
-            )),
-            diagnostics = list(data.table(
-                slide = slide_rescaled,
-                "samples" = NA_integer_,
-                "max_rhat" = NA_integer_,
-                "divergent_transitions" = NA_integer_,
-                "per_divergent_transitions" = NA_integer_,
-                "max_treedepth" = NA_integer_,
-                "no_at_max_treedepth" = NA_integer_,
-                "per_at_max_treedepth" = NA_integer_,
-                "ess_basic" = NA_integer_,
-                "ess_bulk" = NA_integer_,
-                "ess_tail" = NA_integer_
-            ))
-        )
+      # Extract the diagnostic information
+      diagnostics <- get_stan_diagnostics(out$estimates$fit)
+      last_run_time <- elapsed_time(out$estimates$fit)
+      stan_elapsed_time <- stan_elapsed_time + last_run_time
+      crude_run_time <- crude_run_time + out$timing
+      next_stan <- ratchet_control(next_stan)
     }
-}) |> rbindlist()
+
+    # Extract the forecast cases
+    forecasts <- out$estimates$samples[
+      variable == "reported_cases" & type == "forecast",
+      .(date, sample, value, slide = slide_rescaled)
+    ]
+
+    diagnostics <- diagnostics[, slide := slide_rescaled]
+    diagnostics <- diagnostics[, stan_elapsed_time := stan_elapsed_time]
+    #  NB: NEEDS REVIEW: Currently computes total time taken for warmup and sampling for all chains.
+
+    # Combine the forecast, timing and diagnostics
+    res_dt <- data.table(
+      forecast = list(forecasts),
+      timing = list(
+        data.table(
+          slide = slide_rescaled,
+          crude_run_time = crude_run_time,
+          stan_elapsed_time = stan_elapsed_time,
+          keep_run_time = last_run_time,
+          ratchets = ratchets
+        )
+      ),
+      diagnostics = list(diagnostics)
+    )
+    res_dt
+  } else {
+    empty_forecast <- data.table(
+      date = dt[
+        train_window_rescaled + slide,
+        date + seq_len(test_window_rescaled)
+      ],
+      sample = NA_integer_,
+      value = NA_integer_,
+      slide = slide_rescaled
+    )
+    data.table(
+      forecast = list(empty_forecast),
+      timing = list(data.table(
+        slide = slide_rescaled,
+        crude_run_time = lubridate::as.duration(NA),
+        stan_elapsed_time = lubridate::as.duration(NA),
+        keep_run_time = lubridate::as.duration(NA),
+        ratchets = NA_integer_
+      )),
+      diagnostics = list(data.table(
+        slide = slide_rescaled,
+        "samples" = NA_integer_,
+        "max_rhat" = NA_integer_,
+        "divergent_transitions" = NA_integer_,
+        "per_divergent_transitions" = NA_integer_,
+        "max_treedepth" = NA_integer_,
+        "no_at_max_treedepth" = NA_integer_,
+        "per_at_max_treedepth" = NA_integer_,
+        "ess_basic" = NA_integer_,
+        "ess_bulk" = NA_integer_,
+        "ess_tail" = NA_integer_
+      ))
+    )
+  }
+}) |>
+  rbindlist()
 
 # Reach into res_dt and update forecast as follows:
 # - replace the fake dates with orig_dates by doing a merge on date
 # - Remove "confirm" and "date" which was fake
 res_dt[,
-       forecast := lapply(forecast, function(x) {
-           merge(x, dt)
-       })]
+  forecast := lapply(forecast, function(x) {
+    merge(x, dt)
+  })
+]
 
 res_dt[,
-       forecast := lapply(forecast, function(x) {
-           x[, date := orig_date
-           ][, `:=`(
-               orig_date = NULL,
-               confirm = NULL
-           )]
-       })]
+  forecast := lapply(forecast, function(x) {
+    x[, date := orig_date][, `:=`(
+      orig_date = NULL,
+      confirm = NULL
+    )]
+  })
+]
 
 # Save output
 res_dt |> saveRDS(tail(.args, 1))
