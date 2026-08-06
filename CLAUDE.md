@@ -139,7 +139,9 @@ The pipeline implements adaptive MCMC tuning to handle convergence issues:
 - Fits are re-run with increased adapt_delta if divergences/Rhat/ESS thresholds not met
 - `ratchet_control()` increases adapt_delta by 25% of remaining distance to 0.99
 - Max 11 ratchets (brings adapt_delta from 0.8 to 0.99)
-- Individual MCMC criteria: divergences < 0.25% of samples, Rhat < 1.01, ESS_bulk >= 100
+- Individual MCMC criteria: divergences < 0.25% of samples, Rhat < 1.01, ESS_bulk >= 400
+  (ESS is pooled across chains by `posterior::ess_bulk()`, so 400 is the recommended
+  100 per chain for the 4 chains used here)
 - Stopping rule (`keep_running()`): refitting continues only while **fewer than two**
   of the three criteria above are met and the ratchet count is below the limit, so a
   fit passing any two criteria is accepted
