@@ -107,7 +107,7 @@ ${FIGDIR}/fig_panel_diagnostics_%.png: \
 ${FIGDIR}/score_scatter_%.png: R/fig_crps.R ${OUTDIR}/score_%.rds | ${FIGDIR}
 	$(call R)
 
-${FIGDIR}/fig_crps_summary_all_provs.png: R/fig_crps_summary_all_provs.R ${OUTDIR}
+${FIGDIR}/fig_crps_summary_all_provs.png: R/fig_crps_summary_all_provs.R $(patsubst %,${OUTDIR}/score_%.rds,${PROVINCES} RSA) | ${FIGDIR}
 	$(call R)
 
 # pattern = some province
