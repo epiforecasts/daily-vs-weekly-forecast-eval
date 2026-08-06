@@ -93,7 +93,7 @@ The analysis follows a Make-driven pipeline with distinct stages:
   - `dtextract()`: Extract and format score results
   - `join_and_score()`: Join forecasts to reference data and compute CRPS
   - `trim_leading_zero()`: Remove leading zeros from time series
-  - `get_rstan_diagnostics()`: Extract MCMC diagnostics from Stan fits
+  - `get_stan_diagnostics()`: Extract MCMC diagnostics from Stan fits
   - `ratchet_control()`: Adaptive MCMC tuning (increases adapt_delta iteratively)
   - `keep_running()`: While loop control for adaptive fitting (stops when divergences < threshold or max ratchets reached)
 
@@ -176,7 +176,7 @@ The manuscript is in `paper/paper.qmd` (Quarto format) and renders to PLOS One j
 ## Important Notes
 
 - Forecasting is computationally expensive (hours to days for all provinces)
-- Start testing with a single province: `make local/figures/fig_panel_GP.png`
+- Start testing with a single province: `make test`
 - The `main/` directory contains legacy exploratory code; active pipeline is in `R/`
 - Command-line arguments in R scripts use pattern: `commandArgs(trailingOnly = TRUE)`
 - Interactive mode (in RStudio/R console) uses `.args` defined at script top

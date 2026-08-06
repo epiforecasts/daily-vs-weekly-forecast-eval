@@ -5,20 +5,24 @@ library(parallel)
 library(bayesplot)
 
 .args <- if (interactive()) {
-    .scale <- "daily"
-    .prov <- "GP"
-    .tmp <- sprintf(file.path(
-        c("local/data", "debug/output"),
-        c("%s_%s.rds", "forecast_%s_%s.rds")
+  .scale <- "daily"
+  .prov <- "GP"
+  .tmp <- sprintf(
+    file.path(
+      c("local/data", "debug/output"),
+      c("%s_%s.rds", "forecast_%s_%s.rds")
     ),
     .scale,
     .prov
-    )
-    c(.tmp[1:length(.tmp) - 1],
-      file.path("./R/pipeline_shared_inputs.R"),
-      .tmp[length(.tmp)]
-    )
-} else commandArgs(trailingOnly = TRUE)
+  )
+  c(
+    .tmp[1:length(.tmp) - 1],
+    file.path("./R/pipeline_shared_inputs.R"),
+    .tmp[length(.tmp)]
+  )
+} else {
+  commandArgs(trailingOnly = TRUE)
+}
 
 # Load helper functions and shared model inputs
 source(.args[length(.args) - 1])
@@ -29,14 +33,14 @@ source(.args[length(.args) - 1])
 # Incubation period
 # Get from epiparameter package doi:10.3390/jcm9020538
 sars_cov_incubation_dist <- epiparameter_db(
-    disease = "COVID-19",
-    single_epiparameter = TRUE,
-    epi_name = "incubation period"
+  disease = "COVID-19",
+  single_epiparameter = TRUE,
+  epi_name = "incubation period"
 )
 
 incubation_params <- c(
-	get_parameters(sars_cov_incubation_dist),
-	list(max = round(quantile(sars_cov_incubation_dist, 0.999)))
+  get_parameters(sars_cov_incubation_dist),
+  list(max = round(quantile(sars_cov_incubation_dist, 0.999)))
 ) # Upper 99.9% range needed for EpiNow2
 
 incubation_period <- do.call(LogNormal, incubation_params)
@@ -72,107 +76,117 @@ obs <- obs_opts(
 # Prepare data
 dt <- readRDS(.args[1])[, .(date = as.Date(date), confirm)]
 
-if (!is_daily) dt <- dt[!is.na(confirm)]
+if (!is_daily) {
+  dt <- dt[!is.na(confirm)]
+}
 
 # Fill missing dates
 dt_complete <- fill_missing(
-    dt, missing_dates = "accumulate", missing_obs = "accumulate",
-    initial_accumulate = if (is_daily) 1 else 7
+  dt,
+  missing_dates = "accumulate",
+  missing_obs = "accumulate",
+  initial_accumulate = if (is_daily) 1 else 7
 )
 
 # Slides for fitting
-slides <- seq(0, dt_complete[, .N - (train_window + test_window)], by = test_window)
+slides <- seq(
+  0,
+  dt_complete[, .N - (train_window + test_window)],
+  by = test_window
+)
 
 
 res_dt <- lapply(slides, \(slide) {
-	slice <- dt_complete[seq_len(train_window) + slide] |> trim_leading_zero()
-	if (slice[, .N > (test_window * 2)]) {
-	    # diagnostics place holder to guarantee entry into while
-	    diagnostics <- data.table(
-	        divergent_transitions = 0.1 * stan$iter_sampling * stan$chains,
-	        ess_bulk = 20,
-	        max_rhat = 2
-	    ) # place holder to guarantee entry into while
-		ratchets <- -1
-		next_stan <- stan
-		stan_elapsed_time <- 0
-		crude_run_time <- 0
+  slice <- dt_complete[seq_len(train_window) + slide] |> trim_leading_zero()
+  if (slice[, .N > (test_window * 2)]) {
+    # diagnostics place holder to guarantee entry into while
+    diagnostics <- data.table(
+      divergent_transitions = 0.1 * stan$iter_sampling * stan$chains,
+      ess_bulk = 20,
+      max_rhat = 2
+    ) # place holder to guarantee entry into while
+    ratchets <- -1
+    next_stan <- stan
+    stan_elapsed_time <- 0
+    crude_run_time <- 0
 
-		while (keep_running(diagnostics, ratchets)) {
-		    # The first ratchet counts as 0
-			ratchets <- ratchets + 1
-			# Fit the model
-			out <- epinow(
-				data = slice,
-				generation_time = generation_time_opts(generation_time),
-				delays = delay_opts(delay),
-				rt = if (!interactive()) rt_opts(prior = rt_prior),
-				forecast = forecast_opts(horizon = test_window, accumulate = 1),
-				obs = obs,
-				stan = next_stan
-			)
+    while (keep_running(diagnostics, ratchets)) {
+      # The first ratchet counts as 0
+      ratchets <- ratchets + 1
+      # Fit the model
+      out <- epinow(
+        data = slice,
+        generation_time = generation_time_opts(generation_time),
+        delays = delay_opts(delay),
+        rt = if (!interactive()) rt_opts(prior = rt_prior),
+        forecast = forecast_opts(horizon = test_window, accumulate = 1),
+        obs = obs,
+        stan = next_stan
+      )
 
-			# Extract the diagnostic information
-			diagnostics <- get_rstan_diagnostics(out$estimates$fit)
-			last_run_time <- elapsed_time(out$estimates$fit)
-			stan_elapsed_time <- stan_elapsed_time + last_run_time
-			crude_run_time <- crude_run_time + out$timing
-			next_stan <- ratchet_control(next_stan)
-		}
-		# Extract the forecast cases
-		forecasts <- out$estimates$samples[
-			variable == "reported_cases" & type == "forecast",
-			.(date, sample, value, slide = slide)
-		]
+      # Extract the diagnostic information
+      diagnostics <- get_stan_diagnostics(out$estimates$fit)
+      last_run_time <- elapsed_time(out$estimates$fit)
+      stan_elapsed_time <- stan_elapsed_time + last_run_time
+      crude_run_time <- crude_run_time + out$timing
+      next_stan <- ratchet_control(next_stan)
+    }
+    # Extract the forecast cases
+    forecasts <- out$estimates$samples[
+      variable == "reported_cases" & type == "forecast",
+      .(date, sample, value, slide = slide)
+    ]
 
-		diagnostics <- diagnostics[, slide := slide]
-		diagnostics <- diagnostics[, stan_elapsed_time := stan_elapsed_time]
-		#  NB: NEEDS REVIEW: Currently computes total time taken for warmup and sampling for all chains.
+    diagnostics <- diagnostics[, slide := slide]
+    diagnostics <- diagnostics[, stan_elapsed_time := stan_elapsed_time]
+    #  NB: NEEDS REVIEW: Currently computes total time taken for warmup and sampling for all chains.
 
-		# Combine the forecast, timing and diagnostics
-		res_dt <- data.table(
-		    forecast = list(forecasts),
-		    timing = list(
-		        data.table(
-		            slide = slide,
-		            crude_run_time = crude_run_time,
-		            stan_elapsed_time = stan_elapsed_time,
-					keep_run_time = last_run_time,
-					ratchets = ratchets
-		        )
-		    ),
-		    diagnostics = list(diagnostics)
-		)
-		res_dt
-	} else {
-		empty_forecast <- data.table(
-			date = dt[train_window + slide, date + seq_len(test_window)],
-			sample = NA_integer_, value = NA_integer_, slide = slide
-		)
-		data.table(
-			forecast = list(empty_forecast),
-			timing = list(data.table(
-			    slide = slide,
-			    crude_run_time = lubridate::as.duration(NA),
-			    stan_elapsed_time = lubridate::as.duration(NA),
-				keep_run_time = lubridate::as.duration(NA),
-				ratchets = NA_integer_
-			)),
-			diagnostics = list(data.table(
-				slide = slide,
-				"samples" = NA,
-				"max_rhat" = NA,
-				"divergent_transitions" = NA,
-				"per_divergent_transitions" = NA,
-				"max_treedepth" = NA,
-				"no_at_max_treedepth" = NA,
-				"per_at_max_treedepth" = NA,
-				"ess_basic" = NA,
-				"ess_bulk" = NA,
-				"ess_tail" = NA
-			))
-		)
-	}
+    # Combine the forecast, timing and diagnostics
+    res_dt <- data.table(
+      forecast = list(forecasts),
+      timing = list(
+        data.table(
+          slide = slide,
+          crude_run_time = crude_run_time,
+          stan_elapsed_time = stan_elapsed_time,
+          keep_run_time = last_run_time,
+          ratchets = ratchets
+        )
+      ),
+      diagnostics = list(diagnostics)
+    )
+    res_dt
+  } else {
+    empty_forecast <- data.table(
+      date = dt[train_window + slide, date + seq_len(test_window)],
+      sample = NA_integer_,
+      value = NA_integer_,
+      slide = slide
+    )
+    data.table(
+      forecast = list(empty_forecast),
+      timing = list(data.table(
+        slide = slide,
+        crude_run_time = lubridate::as.duration(NA),
+        stan_elapsed_time = lubridate::as.duration(NA),
+        keep_run_time = lubridate::as.duration(NA),
+        ratchets = NA_integer_
+      )),
+      diagnostics = list(data.table(
+        slide = slide,
+        "samples" = NA,
+        "max_rhat" = NA,
+        "divergent_transitions" = NA,
+        "per_divergent_transitions" = NA,
+        "max_treedepth" = NA,
+        "no_at_max_treedepth" = NA,
+        "per_at_max_treedepth" = NA,
+        "ess_basic" = NA,
+        "ess_bulk" = NA,
+        "ess_tail" = NA
+      ))
+    )
+  }
 })
 
 res_dt |> rbindlist() |> saveRDS(tail(.args, 1))
