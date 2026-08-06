@@ -245,7 +245,7 @@ keep_running <- function(
   dlimit = ceiling(5000 * 0.0025),
   rlimit = 11,
   rhatlim = 1.01,
-  essmin = 400
+  essmin = 100
 ) {
   passingmcmc <- c(
     dgn$divergent_transitions < dlimit,
