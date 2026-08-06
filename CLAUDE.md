@@ -95,7 +95,7 @@ The analysis follows a Make-driven pipeline with distinct stages:
   - `trim_leading_zero()`: Remove leading zeros from time series
   - `get_stan_diagnostics()`: Extract MCMC diagnostics from Stan fits
   - `ratchet_control()`: Adaptive MCMC tuning (increases adapt_delta iteratively)
-  - `keep_running()`: While loop control for adaptive fitting (stops when divergences < threshold or max ratchets reached)
+  - `keep_running()`: While loop control for adaptive fitting (stops when at least two of the three MCMC criteria pass, or max ratchets reached)
 
 - `R/pipeline_main.R`: Main forecasting pipeline for daily/weekly data
   - Runs epinow() in sliding windows
@@ -139,7 +139,10 @@ The pipeline implements adaptive MCMC tuning to handle convergence issues:
 - Fits are re-run with increased adapt_delta if divergences/Rhat/ESS thresholds not met
 - `ratchet_control()` increases adapt_delta by 25% of remaining distance to 0.99
 - Max 11 ratchets (brings adapt_delta from 0.8 to 0.99)
-- Stopping criteria: divergences < 0.25% of samples, Rhat < 1.01, ESS_bulk >= 400
+- Individual MCMC criteria: divergences < 0.25% of samples, Rhat < 1.01, ESS_bulk >= 100
+- Stopping rule (`keep_running()`): refitting continues only while **fewer than two**
+  of the three criteria above are met and the ratchet count is below the limit, so a
+  fit passing any two criteria is accepted
 
 ### Makefile Pattern Rules
 

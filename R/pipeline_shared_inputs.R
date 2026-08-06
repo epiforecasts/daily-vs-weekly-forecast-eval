@@ -215,30 +215,57 @@ test_window_rescaled <- 2 # 2 weeks
 train_window <- 7 * 10
 test_window <- 7 * 2
 
-# While loop controls
-# Rationale for while loop conditions:
-# - divergences <= 2: all we have is that the divergences should be low, so we're using a more realistic value based on fitting the data many times and not achieving low enough divergences. See
-# https://mc-stan.org/learn-stan/diagnostics-warnings.html#divergent-transitions-after-warmup
-# - To prevent the loop from running forever, we also stop refitting after a specified number of ratchets and return/process the last fit.
-# - By our computation, we need 11 ratchets to bump up adapt_delta from 0.88 to 0.99 in 0.25 increments of the previous value
-#  R code:
+#' Pipeline stopping criteria
+#'
+#' Decides whether the adaptive fitting loop should refit the model with
+#' retuned stan controls (see [ratchet_control()]). Refitting continues while
+#' fewer than two of the three MCMC criteria (divergent transitions, Rhat, and
+#' bulk ESS) are met and the number of ratchets so far is below `rlimit`.
+#'
+#' @param dgn A data.table of MCMC diagnostics for the current fit, as returned
+#' by [get_stan_diagnostics()]. Must contain the columns `divergent_transitions`,
+#' `max_rhat`, and `ess_bulk`.
+#' @param rs Integer; the number of ratchets (refits with retuned stan
+#' controls) performed so far. The first fit counts as ratchet 0.
+#' @param dlimit Numeric; the maximum number of divergent transitions
+#' tolerated. Defaults to 0.25% of the 5000 samples requested in `stan_opts()`.
+#' @param rlimit Integer; the maximum number of ratchets allowed before the
+#' loop stops and the last fit is returned. Defaults to 11, the number of
+#' ratchets needed to raise `adapt_delta` from 0.8 to 0.99 (see Details).
+#' @param rhatlim Numeric; the upper limit for the maximum Rhat across
+#' parameters. Defaults to 1.01.
+#' @param essmin Numeric; the minimum bulk effective sample size required
+#' across parameters. Defaults to 100.
+#'
+#' @returns A logical scalar; `TRUE` if the model should be refit with retuned
+#' stan controls, otherwise `FALSE`.
+#' @export
+#'
+#' @details
+#' Rationale for while loop conditions:
+#' - divergences <= 0.25% of samples, based on Stan community recommendations
+#' <https://mc-stan.org/learn-stan/diagnostics-warnings.html#divergent-transitions-after-warmup>
+#' - To prevent the loop from running forever, we also stop refitting after a specified number of ratchets and return/process the last fit.
+#' By our computation, we need 11 ratchets to bump up adapt_delta from 0.88 to 0.99 in 0.25 increments of the previous value
+#'  R code:
 #' initial_delta <- 0.8
-# target_delta <- 0.99
-# adapt_delta <- initial_delta
-# steps <- 0
-# adapt_delta_vec <- initial_delta
-#
-# while (adapt_delta < target_delta) {
-#     adapt_delta <- min(0.990, adapt_delta + (1 - adapt_delta) * 0.25)
-#     steps <- steps + 1
-#     adapt_delta_vec <- append(adapt_delta_vec, adapt_delta)
-# }
-#
-# steps
-# adapt_delta_vec
-# divergent_transitions_limit <- 0.0025 # .25 percent of the samples
-# ratchets_limit <- 11
-
+#' target_delta <- 0.99
+#' adapt_delta <- initial_delta
+#' steps <- 0
+#' adapt_delta_vec <- initial_delta
+#'
+#' while (adapt_delta < target_delta) {
+#'     adapt_delta <- min(0.990, adapt_delta + (1 - adapt_delta) * 0.25)
+#'     steps <- steps + 1
+#'     adapt_delta_vec <- append(adapt_delta_vec, adapt_delta)
+#' }
+#'
+#' steps
+#' adapt_delta_vec
+#' divergent_transitions_limit <- 0.0025 # .25 percent of the samples
+#' ratchets_limit <- 11
+#' - Rhat must be 1.01 or less. See posterior::rhat(), which is based on Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and Paul-Christian Bürkner (2021). Rank-normalization, folding, and localization: An improved R-hat for assessing convergence of MCMC (with discussion). Bayesian Analysis. 16(2), 667-–718. doi:10.1214/20-BA1221
+#' - ESS should be at least 100 per chain. See posterior::ess_bulk(), which is based on Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and Paul-Christian Bürkner (2021). Rank-normalization, folding, and localization: An improved R-hat for assessing convergence of MCMC (with discussion). Bayesian Analysis. 16(2), 667-–718. doi:10.1214/20-BA1221
 keep_running <- function(
   dgn,
   rs,
