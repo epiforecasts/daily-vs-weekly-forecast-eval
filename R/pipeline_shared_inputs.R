@@ -235,7 +235,9 @@ test_window <- 7 * 2
 #' @param rhatlim Numeric; the upper limit for the maximum Rhat across
 #' parameters. Defaults to 1.01.
 #' @param essmin Numeric; the minimum bulk effective sample size required
-#' across parameters. Defaults to 100.
+#' across parameters. Defaults to 400. Note that `posterior::ess_bulk()` pools
+#' draws across chains, so 400 corresponds to the recommended 100 per chain for
+#' the 4 chains used here (see Details).
 #'
 #' @returns A logical scalar; `TRUE` if the model should be refit with retuned
 #' stan controls, otherwise `FALSE`.
@@ -265,14 +267,14 @@ test_window <- 7 * 2
 #' divergent_transitions_limit <- 0.0025 # .25 percent of the samples
 #' ratchets_limit <- 11
 #' - Rhat must be 1.01 or less. See posterior::rhat(), which is based on Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and Paul-Christian Bürkner (2021). Rank-normalization, folding, and localization: An improved R-hat for assessing convergence of MCMC (with discussion). Bayesian Analysis. 16(2), 667-–718. doi:10.1214/20-BA1221
-#' - ESS should be at least 100 per chain. See posterior::ess_bulk(), which is based on Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and Paul-Christian Bürkner (2021). Rank-normalization, folding, and localization: An improved R-hat for assessing convergence of MCMC (with discussion). Bayesian Analysis. 16(2), 667-–718. doi:10.1214/20-BA1221
+#' - ESS should be at least 100 per chain, i.e. 400 across the 4 chains used here, since posterior::ess_bulk() pools draws across chains. Below this the Rhat and ESS estimates are themselves too noisy to be relied on. See posterior::ess_bulk(), which is based on Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and Paul-Christian Bürkner (2021). Rank-normalization, folding, and localization: An improved R-hat for assessing convergence of MCMC (with discussion). Bayesian Analysis. 16(2), 667-–718. doi:10.1214/20-BA1221
 keep_running <- function(
   dgn,
   rs,
   dlimit = ceiling(5000 * 0.0025),
   rlimit = 11,
   rhatlim = 1.01,
-  essmin = 100
+  essmin = 400
 ) {
   passingmcmc <- c(
     dgn$divergent_transitions < dlimit,

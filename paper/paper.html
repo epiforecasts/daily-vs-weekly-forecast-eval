@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.43">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="James Mba Azam">
+<meta name="author" content="Sam Abbott">
+<meta name="author" content="Tumelo Sereo">
+<meta name="author" content="Tobi Awodumila">
+<meta name="author" content="Sebastian Funk">
+<meta name="author" content="Carl Pearson">
+
+<title>Epidemiological forecasting using daily versus weekly aggregated data: Computational and practical implications</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="paper_files/libs/clipboard/clipboard.min.js"></script>
+<script src="paper_files/libs/quarto-html/quarto.js"></script>
+<script src="paper_files/libs/quarto-html/popper.min.js"></script>
+<script src="paper_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="paper_files/libs/quarto-html/anchor.min.js"></script>
+<link href="paper_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="paper_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="paper_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="paper_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="paper_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="paper_files/libs/quarto-diagram/mermaid.min.js"></script>
+<script src="paper_files/libs/quarto-diagram/mermaid-init.js"></script>
+<link href="paper_files/libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="paper.pdf"><i class="bi bi-file-pdf"></i>PDF (plos)</a></li></ul></div></div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Epidemiological forecasting using daily versus weekly aggregated data: Computational and practical implications</h1>
+</div>
+
+
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">Authors</div>
+  <div class="quarto-title-meta-heading">Affiliations</div>
+  
+    <div class="quarto-title-meta-contents">
+    <p class="author">James Mba Azam <a href="mailto:james.azam@lshtm.ac.uk" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Center for Mathematical Modelling of Infectious Diseases, London School of Hygiene &amp; Tropical Medicine
+          </p>
+        <p class="affiliation">
+            University of North Carolina
+          </p>
+      </div>
+    <div class="quarto-title-meta-contents">
+    <p class="author">Sam Abbott </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Center for Mathematical Modelling of Infectious Diseases, London School of Hygiene &amp; Tropical Medicine
+          </p>
+      </div>
+    <div class="quarto-title-meta-contents">
+    <p class="author">Tumelo Sereo </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            South African Center of Excellence for Epidemiological Modelling and Analysis, Stellenbosch University
+          </p>
+      </div>
+    <div class="quarto-title-meta-contents">
+    <p class="author">Tobi Awodumila </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            African Institute for Mathematical Sciences
+          </p>
+      </div>
+    <div class="quarto-title-meta-contents">
+    <p class="author">Sebastian Funk </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Center for Mathematical Modelling of Infectious Diseases, London School of Hygiene &amp; Tropical Medicine
+          </p>
+      </div>
+    <div class="quarto-title-meta-contents">
+    <p class="author">Carl Pearson </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            South African Center of Excellence for Epidemiological Modelling and Analysis, Stellenbosch University
+          </p>
+        <p class="affiliation">
+            University of North Carolina
+          </p>
+      </div>
+  </div>
+
+<div class="quarto-title-meta">
+
+      
+  
+    
+  </div>
+  
+<div>
+  <div class="abstract">
+    <div class="block-title">Abstract</div>
+    <p>Infectious disease forecasting is useful for public health decision-making, including resource allocation and the timing of outbreak response interventions. Forecast quality is impacted by the quality of the data inputs, including spatio-temporal resolution, but the extent is still an area of active research. Here, we evaluate differences between forecast performance and computational requirements between daily and weekly COVID-19 incidence data from the nine provinces of South Africa as forecasting inputs. We use the EpiNow2 R package as the core forecasting engine in an analysis pipeline that simulates in situ realtime forecasting with varying data streams. We evaluate generated forecasts against realized outcomes using the continuous ranked probability score (CRPS) and Effective Sample Size per second as measures of forecast performance and computational efficiency respectively. We find consistent trends in forecast performance (CRPS) and computational efficiency (ESS per second) across time, location, and forecast target resolution. Although both data inputs produced comparable forecast performance, the lower resolution weekly data inputs had lower computational efficiency. We describe a workflow for achieving comparable fits to data between daily and weekly data that can be applicable to similar forecasting problems. The extent to which these tradeoffs matter is context-specific, and varies depending on the public health question at hand. Therefore, the overall analytical costs, including collecting higher temporal resolution data and supplying greater computational resources, need to be weighed against the benefits of improved decision-making outcomes, like more prompt interventions and fewer false alarms. This analysis provides useful evidence towards establishing benchmark analyses for that kind of valuation of forecasting activities.</p>
+  </div>
+</div>
+
+
+</header>
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Infectious disease forecasts are increasingly used to inform public health decisions such as resource allocation and the timing of interventions during large outbreaks like influenza <span class="citation" data-cites="doms_assessing_2018">(<a href="#ref-doms_assessing_2018" role="doc-biblioref">Doms, Kramer, and Shaman 2018</a>)</span>, Ebola <span class="citation" data-cites="meltzer_modeling_2016 carias_forecasting_2019">(<a href="#ref-meltzer_modeling_2016" role="doc-biblioref">Meltzer 2016</a>; <a href="#ref-carias_forecasting_2019" role="doc-biblioref">Carias et al. 2019</a>)</span>, and the COVID-19 pandemic <span class="citation" data-cites="reich_collaborative_2022">(<a href="#ref-reich_collaborative_2022" role="doc-biblioref">Reich et al. 2022</a>)</span>. Many approaches for making such forecasts exist, varying from highly mechanistic, capturing the biological processes, to statistical, relying on previously observed patterns in the data <span class="citation" data-cites="lauer_infectious_2020 banholzer_comparison_2023">(<a href="#ref-lauer_infectious_2020" role="doc-biblioref">Lauer, Brown, and Reich 2020</a>; <a href="#ref-banholzer_comparison_2023" role="doc-biblioref">Banholzer et al. 2023</a>)</span>. However, the conditions under which a particular forecasting approach is most appropriate remain an open question <span class="citation" data-cites="lauer_infectious_2020">(<a href="#ref-lauer_infectious_2020" role="doc-biblioref">Lauer, Brown, and Reich 2020</a>)</span>.</p>
+<p>Infectious disease forecasting models are often calibrated and confronted with data characterized by noise, incompleteness, and temporal delays in reporting and the interpretation of forecasts in this context is often of concern <span class="citation" data-cites="reich_collaborative_2022 nash_realtime_2022 nash_estimating_2023">(<a href="#ref-reich_collaborative_2022" role="doc-biblioref">Reich et al. 2022</a>; <a href="#ref-nash_realtime_2022" role="doc-biblioref">Nash, Nouvellet, and Cori 2022</a>; <a href="#ref-nash_estimating_2023" role="doc-biblioref">Nash et al. 2023</a>)</span>. The temporal resolution of surveillance data is a key determinant of forecast performance with daily data being the gold standard as data aggregation lowers data fidelity and may mask short-term fluctuations <span class="citation" data-cites="reich_collaborative_2022">(<a href="#ref-reich_collaborative_2022" role="doc-biblioref">Reich et al. 2022</a>)</span>. Towards the latter parts of the COVID-19 pandemic, many health agencies shifted from daily to weekly case reporting to reduce the cost and burden of data collection <span class="citation" data-cites="conway_joint_2024">(<a href="#ref-conway_joint_2024" role="doc-biblioref">Conway and Mueller 2024</a>)</span>. Data is often aggregated for several reasons including removing week-day and weekend reporting biases.</p>
+<p>Temporally aggregated data can be used for forecasting, but they also point to trade-offs between fidelity, bias reduction, and computational burden. Several recent studies have introduced algorithms to estimate transmission from aggregated incidence data. The EpiEstim R package uses an expectation-maximisation method for reconstructing daily case counts from weekly reports, allowing rapid estimation of time-varying reproduction numbers <span class="citation" data-cites="nash_estimating_2023">(<a href="#ref-nash_estimating_2023" role="doc-biblioref">Nash et al. 2023</a>)</span>. Another approach applied simulation-based methods using Approximate Bayesian Computation (ABC), recovering reproduction numbers accurately from weekly data, albeit with increased algorithmic complexity resulting from the repeated simulation of cases using ABC <span class="citation" data-cites="ogi-gittins_simulation-based_2025">(<a href="#ref-ogi-gittins_simulation-based_2025" role="doc-biblioref">Ogi-Gittins et al. 2025</a>)</span>. A Sequential Monte Carlo framework fit to renewal models either with day-of-week effects or with weekly aggregation has achieved good performance with lower root-mean-square error and CRPS than a chosen baseline model <span class="citation" data-cites="steyn_primer_2025">(<a href="#ref-steyn_primer_2025" role="doc-biblioref">Steyn et al. 2025</a>)</span>. Although these methods demonstrate that aggregated data can be accommodated, their focus is primarily on retrospective inference (e.g., estimating reproduction numbers or elimination probabilities) rather than forecast performance on unseen data. Moreover, there is little discussion of how computational effort scales with data resolution or of how to systematically combine diagnostic checks with proper scoring rules to interpret performance.</p>
+<p>The forecasting research community has established several methods for scoring <span class="citation" data-cites="gneiting_strictly_2007 mitchell_proper_2017 pic_proper_2024">(<a href="#ref-gneiting_strictly_2007" role="doc-biblioref">Gneiting and Raftery 2007</a>; <a href="#ref-mitchell_proper_2017" role="doc-biblioref">Mitchell and Ferro 2017</a>; <a href="#ref-pic_proper_2024" role="doc-biblioref">Pic et al. 2024</a>)</span> and evaluating <span class="citation" data-cites="tabataba_framework_2017">(<a href="#ref-tabataba_framework_2017" role="doc-biblioref">Tabataba et al. 2017</a>)</span> forecasts. The choice of score/metric depends on the forecast type (point, interval, and probabilistic) and ranges from traditional aggregate measures of distance to Proper Scoring Rules <span class="citation" data-cites="lauer_infectious_2020 gneiting_strictly_2007 mitchell_proper_2017 pic_proper_2024 bracher_evaluating_2021">(<a href="#ref-lauer_infectious_2020" role="doc-biblioref">Lauer, Brown, and Reich 2020</a>; <a href="#ref-gneiting_strictly_2007" role="doc-biblioref">Gneiting and Raftery 2007</a>; <a href="#ref-mitchell_proper_2017" role="doc-biblioref">Mitchell and Ferro 2017</a>; <a href="#ref-pic_proper_2024" role="doc-biblioref">Pic et al. 2024</a>; <a href="#ref-bracher_evaluating_2021" role="doc-biblioref">Bracher et al. 2021</a>)</span>. Forecast evaluation metrics such as the continuous ranked probability score (CRPS) quantify the distance between predicted and observed distributions and are widely adopted to assess forecast performance against observed data <span class="citation" data-cites="gneiting_strictly_2007 bracher_evaluating_2021 funk_assessing_2019">(<a href="#ref-gneiting_strictly_2007" role="doc-biblioref">Gneiting and Raftery 2007</a>; <a href="#ref-bracher_evaluating_2021" role="doc-biblioref">Bracher et al. 2021</a>; <a href="#ref-funk_assessing_2019" role="doc-biblioref">Funk et al. 2019</a>)</span>. Recent work highlights that while existing metrics address theoretical concerns such as calibration and sharpness, they rarely address the operational challenges of generating forecasts, including reporting frequency and computational resourcing, pointing to a need for evaluation frameworks that bridge statistical evaluation and practical relevance <span class="citation" data-cites="murphy_what_1993">(<a href="#ref-murphy_what_1993" role="doc-biblioref">Murphy 1993</a>)</span>.</p>
+<p>Here, we benchmark a method for handling aggregated data in the EpiNow2 R package version 1.7.1 <span class="citation" data-cites="abbott_estimating_2020 abbott_epinow2_2025">(<a href="#ref-abbott_estimating_2020" role="doc-biblioref">Abbott et al. 2020</a>, <a href="#ref-abbott_epinow2_2025" role="doc-biblioref">2025</a>)</span>. Briefly, the EpiNow2 approach models daily latent infections using the renewal equation and maps them to observations using discrete convolutions of delay distributions, including the incubation period and reporting delays. We generate forecasts from daily and weekly COVID-19 reported cases in South Africa between March 2020 - August 2022 <span class="citation" data-cites="marivate_coronavirus_2020 marivate_use_2020">(<a href="#ref-marivate_coronavirus_2020" role="doc-biblioref">Marivate et al. 2020</a>; <a href="#ref-marivate_use_2020" role="doc-biblioref">Marivate and Combrink 2020</a>)</span>, evaluate their accuracy using CRPS, assess convergence through rhat <span class="citation" data-cites="vehtari_rank-normalization_2021">(<a href="#ref-vehtari_rank-normalization_2021" role="doc-biblioref">Vehtari et al. 2021</a>)</span> and divergent transitions, and computational efficiency via effective sample size per second. By combining proper scoring rules with diagnostic measures, we quantify how forecast performance and computational requirements vary with data granularity and demonstrate how to achieve comparable fits across temporal resolutions. Our findings provide a transparent assessment of the trade-offs inherent in using aggregated data for real-time forecasting and offer practical guidance for balancing data collection efforts with forecasting needs, thereby advancing the development of evaluation standards and improving the utility of epidemic forecasts for public health decision-making.</p>
+</section>
+<section id="methods" class="level1">
+<h1>Methods</h1>
+<p>We developed a pipeline (<strong>?@fig-pipeline-flowchart</strong>) to get and clean observed data, perform the forecasts and extract associated computational quantities such as MCMC convergence metrics and diagnostics and model run times, score the forecasts, and consolidate the outcomes for analysis and visualisation. In the following sections, we provide more detail on the individual parts of the pipeline.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">//| label: fig-pipeline-flowchart
+//| fig-cap: "A summary of the pipeline."
+graph TD
+    subgraph Data_Prep [**Data Preparation**]
+        A[Get &amp; Clean Raw Provincial Daily Data] --&gt; B[Aggregate Daily Data to Weekly Scale]
+        B --&gt; C[Generate Rescaled Weekly Data from Weekly Data]
+    end
+
+    subgraph Modeling [**Forecasting Models**]
+        B --&gt; D[Daily and Weekly Model]
+        C --&gt; E[Rescaled Weekly Model]
+    end
+
+    subgraph Evaluation [**Evaluation**]
+        D &amp; E --&gt; F["Forecast Scoring (CRPS)"]
+        D &amp; E --&gt; G["Diagnostics (Divergences, ESS tail per second)"]
+    end
+
+    subgraph Visualisation [**Visualisation**]
+        F --&gt; H["log(Incidence) &amp; log(CRPS)"]
+        G --&gt; I["log(Incidence) &amp; log(ESS tail/sec) &amp; ratchets"]
+    end
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<section id="data" class="level2">
+<h2 class="anchored" data-anchor-id="data">Data</h2>
+<p>We obtained and cleaned cumulative COVID-19 case counts for the nine South African provinces <span class="citation" data-cites="marivate_coronavirus_2020 marivate_use_2020">(<a href="#ref-marivate_coronavirus_2020" role="doc-biblioref">Marivate et al. 2020</a>; <a href="#ref-marivate_use_2020" role="doc-biblioref">Marivate and Combrink 2020</a>)</span>. The cleaning process focused on common reporting issues. First, two all-NA report dates (2020-03-27 and 2020-04-07) were removed up front. Next, the cumulative counts were converted to daily incidence per province by ordered differencing of non-missing values. We then corrected three reporting artefacts using a series of steps as follows:</p>
+<ul>
+<li>When a positive incidence case count had an equal neighbouring negative count (or vice versa), both values were set to zero.</li>
+<li>Using the cumulative series, we identified instances where negative daily incidence indicated that cumulative counts had been swapped; in these cases, we corrected the surrounding three-day window by converting the negative value to positive and adjusting the adjacent days so that the cumulative series remained strictly increasing.</li>
+<li>For any remaining negative daily values, we redistributed counts between a negative count and its positive neighbor by averaging the two values, ensuring both became non-negative while preserving the overall total incidence.</li>
+</ul>
+<p>After cleaning the time series, we ensured each province had a non-negative daily time series for downstream aggregation and forecasting.</p>
+<p>We aggregated the daily incidence time series into a weekly and rescaled weekly dataset. The weekly data were obtained by summing the daily counts in non-overlapping 7‑day windows. The rescaled weekly data was a variant of the weekly data that represented each weekly total as if it occurred on a single day. This allowed us to evaluate models when all observations were spaced one week apart while preserving comparability with the other two datasets.</p>
+</section>
+<section id="forecasting" class="level2">
+<h2 class="anchored" data-anchor-id="forecasting">Forecasting</h2>
+<p>We used EpiNow2’s default model for estimating and forecasting reported cases (epinow) to generate 2-week ahead forecasts of COVID-19 reported cases for each of the nine provinces. We fit the model on 10-week chunks of the daily, weekly, and rescaled weekly data inputs, using 2-week sliding windows, and generated 2-week ahead forecasts for each slide. This approach allowed for consistent evaluation across different phases of the epidemic.</p>
+<p>We configured the observation model in the default model to match the different observation patterns in the input data. For the daily data, the observation model accounted for day-of-week effects but this was turned off for the weekly and rescaled weekly data because the observations already reflect weekly totals.</p>
+<p>EpiNow2 models the weekly aggregated data on a daily scale by accounting for the implicit missing dates and accumulating the modelled reported cases into weekly forecasts corresponding to the dates in the observed data. In this work, when we made forecasts from the weekly resolution data, we effectively set Saturday through Thursday as missing (NA’s) and accumulated those reports to Fridays.</p>
+<p>When fitting to the data in a sliding window, we allowed the model to be refitted until reasonable MCMC diagnostic and convergence criteria, defined below, were achieved. Stan (via cmdstanr with EpiNow2) was used for model fitting. We ran 4 chains in parallel, using 4 cores, with 5,000 posterior samples or 1500 iterations per chain. For each refit, we tuned stan’s adapt-delta parameter to ensure efficient sampling and reliable convergence. Following recommendations from the Stan Community <span class="citation" data-cites="betancourt_identity_2020">(<a href="#ref-betancourt_identity_2020" role="doc-biblioref">Betancourt 2020</a>)</span>, the adapt-delta parameter was initiated at 0.80 and increased by 25% of the previous value for the next refit until it reached 0.99, which is the upper limit in stan. Based on the number of refits needed to go from adapt-delta of 0.8 to 0.99 in 25% increments, we determined that each slide could be refitted a maximum of 11 times. When the refit was reached without further improvements to the diagnostics, we returned the last model output. This approach allowed us to prevent the model from being refitted with minor improvements in the diagnostics.</p>
+<p>We measured convergence using various diagnostic metrics. The bulk effective sample size (ESS) quantifies how many independent draws contain the same amount of information as the dependent sample obtained by the MCMC algorithm <span class="citation" data-cites="vehtari_rank-normalization_2021 stan_development_team_stan_2025 betancourt_conceptual_2018">(<a href="#ref-vehtari_rank-normalization_2021" role="doc-biblioref">Vehtari et al. 2021</a>; <a href="#ref-stan_development_team_stan_2025" role="doc-biblioref">Stan Development Team 2025</a>; <a href="#ref-betancourt_conceptual_2018" role="doc-biblioref">Betancourt 2018</a>)</span>. We limited bulk ESS to at least 100 per chain, hence a minimum of 400 for the 4 chains, based on recommendations with higher values of ESS indicating efficient mixing of the chains <span class="citation" data-cites="vehtari_rank-normalization_2021">(<a href="#ref-vehtari_rank-normalization_2021" role="doc-biblioref">Vehtari et al. 2021</a>)</span>. We additionally tracked rhat, which is a measure of MCMC convergence and limited it to 1.05 or less <span class="citation" data-cites="vehtari_rank-normalization_2021">(<a href="#ref-vehtari_rank-normalization_2021" role="doc-biblioref">Vehtari et al. 2021</a>)</span>. The number of divergent transitions during sampling, which indicates that the Hamiltonian Monte Carlo sampler has failed to accurately explore the posterior distribution due to irregular or complex geometry, potentially leading to biased inference was also limited to 25% of the 5000 samples <span class="citation" data-cites="stan_development_team_stan_2025 betancourt_conceptual_2018 mcelreath_statistical_2018">(<a href="#ref-stan_development_team_stan_2025" role="doc-biblioref">Stan Development Team 2025</a>; <a href="#ref-betancourt_conceptual_2018" role="doc-biblioref">Betancourt 2018</a>; <a href="#ref-mcelreath_statistical_2018" role="doc-biblioref">McElreath 2018</a>)</span>. We also tracked the model run times for computing efficiency metrics like the ESS per second. The diagnostic results were summarised per province and dataset, and time series of the ESS per second were plotted alongside reported cases to visualise sampling efficiency over time.</p>
+</section>
+<section id="outputs" class="level2">
+<h2 class="anchored" data-anchor-id="outputs">Outputs</h2>
+<p>We saved outputs the forecast reported case counts per slide, MCMC diagnostics, including divergences, rhat, and bulk effective sample size per second, and model run times.</p>
+</section>
+<section id="forecast-scoring-and-evaluation" class="level2">
+<h2 class="anchored" data-anchor-id="forecast-scoring-and-evaluation">Forecast scoring and evaluation</h2>
+<p>We evaluated forecast accuracy using the Continuous Ranked Probability Score (CRPS) given by</p>
+<p><span class="math display">\[
+CRPS(F, x) = \int_{-\infty}^{\infty} (F(y) - 1\{y \geq x \})^2 dy
+\]</span></p>
+<p>Where <span class="math inline">\(F(\Theta)\)</span> is the cumulative distribution function of <span class="math inline">\(\Theta\)</span>, here, referring to the observed values, <span class="math inline">\(x\)</span>, and forecast values, <span class="math inline">\(y\)</span>, and 1 is the indicator function <span class="citation" data-cites="gneiting_strictly_2007 bracher_evaluating_2021 bosse_scoring_2023">(<a href="#ref-gneiting_strictly_2007" role="doc-biblioref">Gneiting and Raftery 2007</a>; <a href="#ref-bracher_evaluating_2021" role="doc-biblioref">Bracher et al. 2021</a>; <a href="#ref-bosse_scoring_2023" role="doc-biblioref">Bosse et al. 2023</a>)</span>. The CRPS is a proper scoring rule that quantifies the distance between the cumulative distribution of the forecast values and the observed case counts. CRPS was calculated on log-transformed forecasts and observations as this has been shown to produce more robust results <span class="citation" data-cites="bosse_scoring_2023">(<a href="#ref-bosse_scoring_2023" role="doc-biblioref">Bosse et al. 2023</a>)</span>. The lower the CRPS value, the better. Forecasts were scored in four combinations within each slide:</p>
+<ul>
+<li>Daily forecast vs.&nbsp;daily observations – daily forecasts compared with daily reported cases.</li>
+<li>Daily forecast vs.&nbsp;weekly observations – daily forecasts aggregated to weekly totals and compared to weekly data.</li>
+<li>Weekly forecast vs.&nbsp;daily observations – weekly forecasts disaggregated on a daily scale and compared to the daily series.</li>
+<li>Rescaled weekly forecast vs.&nbsp;weekly observations – rescaled weekly forecasts compared to rescaled weekly counts.</li>
+</ul>
+<p>We compared the default model’s performance across the daily, weekly, and rescaled weekly data inputs using CRPS and ESS per second, computed as the effective sample size for a slide divided by the computation time in seconds. The two metrics represented forecast quality and computational efficiency respectively. Forecast scoring was facilitated by the scoringutils and scoringRules R packages <span class="citation" data-cites="bosse_evaluating_2024 jordan_evaluating_2019">(<a href="#ref-bosse_evaluating_2024" role="doc-biblioref">Bosse et al. 2024</a>; <a href="#ref-jordan_evaluating_2019" role="doc-biblioref">Jordan, Krüger, and Lerch 2019</a>)</span>.</p>
+<p>We plotted a time series of the CRPS and ESS/sec alongside the time series of log-transformed daily and weekly cases for easy interpretability. We also pooled together the results across time and computed the geometric mean relative to the model using daily data. To provide more details of model computational requirements, we also showed a time of the number of refits per slide per province and for all three input types.</p>
+</section>
+<section id="data-and-code-availability" class="level2">
+<h2 class="anchored" data-anchor-id="data-and-code-availability">Data and code availability</h2>
+<p>The analysis used COVID-19 data from South Africa. The code for the analysis is available at https://github.com/epiforecasts/daily-vs-weekly-forecast-eval.</p>
+<p>All analyses were done with R version 4.5.1 <span class="citation" data-cites="r_core_team_r_2025">(<a href="#ref-r_core_team_r_2025" role="doc-biblioref">R Core Team 2025</a>)</span> and orchestrated with GNU make <span class="citation" data-cites="noauthor_gnu_2006">(<a href="#ref-noauthor_gnu_2006" role="doc-biblioref"><span>“<span>GNU</span> <span>Make</span>”</span> 2006</a>)</span>. The SARS-CoV-2 incubation period was obtained from the epiparameter R package v0.4.1.900 <span class="citation" data-cites="lambert_epiparameter_2025">(<a href="#ref-lambert_epiparameter_2025" role="doc-biblioref">Lambert, Kucharski, and Tamayo Cuartero 2025</a>)</span>, which stores a database of literature parameter estimates.</p>
+</section>
+</section>
+<section id="results" class="level1">
+<h1>Results</h1>
+<!-- Fig 1: Illustrative panel figure of forecast performance vs ESS/per sec results for one province.
+This figure shows the time series of reported cases, forecasts on a daily and weekly scale scored against daily, aggregated weekly, and weekly scale data, and computational efficiency (ESS tail per second) for the province xyz (see SI section xyz for plots of all provinces; underlying data available). [Describe figure trends, no analysis]. -->
+<!-- Fig 2: Relative CRPS (geometric mean) of permutation of daily/weekly/weekly scale training vs daily/weekly test for one province. -->
+<!-- Fig 3: Scatter plot of geometric mean of relative CRPS for all provinces (get geometric mean for all provinces and show on one plot) for permutation of daily/weekly/weekly scale training vs daily/weekly test. -->
+</section>
+<section id="discussion" class="level1">
+<h1>Discussion</h1>
+<p>This study highlights the trade-offs of temporal aggregation in epidemiological forecasting. Daily data offer greater accuracy for short-term predictions, albeit at higher computational costs and diagnostic instability. Weekly data provide computational efficiency and smoother trends but sacrifice granularity and responsiveness to rapid changes in case dynamics. Though we did not explicitly investigate this element, it stands to reason that the underlying surveillance system to support higher frequency reporting would also entail additional cost (e.g.&nbsp;more required storage space, more bandwidth to support more frequent access).</p>
+<p>These results have two stakeholders. To the users of EpiNow2, it addressed questions of how EpiNow2 performs under degrading data resolution conditions and the computational requirements to achieve reasonable model fits. To the tool developers, these results inform ways to improve the underlying model to tackle the issue of degrading data conditions.</p>
+<p>The findings emphasize the importance of aligning forecast resolution with the specific objectives of a public health response. For example, aggregated data may be suitable for long-term trend analysis, while high-resolution daily data are better for rapid outbreak detection and intervention planning.</p>
+<p>The evaluation of scoring methodologies and diagnostics in this study also provides a framework for future analyses. Metrics such as CRPS, effective sample sizes, and divergence rates offer robust measures of forecast reliability and can be adapted to various modeling contexts. Though the daily data did generally provide better forecast performance, the algorithmic extensions to explicitly account for missingness kept the weekly resolution approach competitive. Such model enhancements may not always be practical, but this work suggests they can be valuable.</p>
+</section>
+<section id="acknowledgements" class="level1">
+<h1>Acknowledgements</h1>
+<p>The authors would like to acknowledge the International Clinics on Infectious Disease Dynamics and Data (ICI3D) faculty and particularly the Meaningful Modeling of Epidemiological Data (MMED) 2024 workshop faculty for their support during the incubation of this project.</p>
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-abbott_epinow2_2025" class="csl-entry" role="listitem">
+Abbott, Sam, Joel Hellewell, Katharine Sherratt, Katelyn Gostic, Joe Hickson, Hamada S. Badr, Michael DeWitt, James M. Azam, EpiForecasts, and Sebastian Funk. 2025. <span>“<span>EpiNow2</span>: <span>Estimate</span> <span>Real</span>-<span>Time</span> <span>Case</span> <span>Counts</span> and <span>Time</span>-<span>Varying</span> <span>Epidemiological</span> <span>Parameters</span>.”</span> Zenodo. <a href="https://doi.org/10.5281/zenodo.14899316">https://doi.org/10.5281/zenodo.14899316</a>.
+</div>
+<div id="ref-abbott_estimating_2020" class="csl-entry" role="listitem">
+Abbott, Sam, Joel Hellewell, Robin N. Thompson, Katharine Sherratt, Hamish P. Gibbs, Nikos I. Bosse, James D. Munday, et al. 2020. <span>“Estimating the Time-Varying Reproduction Number of <span>SARS</span>-<span>CoV</span>-2 Using National and Subnational Case Counts.”</span> <em>Wellcome Open Research</em> 5: 112. <a href="https://doi.org/10.12688/wellcomeopenres.16006.2">https://doi.org/10.12688/wellcomeopenres.16006.2</a>.
+</div>
+<div id="ref-banholzer_comparison_2023" class="csl-entry" role="listitem">
+Banholzer, Nicolas, Thomas Mellan, H. Juliette T. Unwin, Stefan Feuerriegel, Swapnil Mishra, and Samir Bhatt. 2023. <span>“A Comparison of Short-Term Probabilistic Forecasts for the Incidence of <span>COVID</span>-19 Using Mechanistic and Statistical Time Series Models.”</span> arXiv. <a href="https://doi.org/10.48550/arXiv.2305.00933">https://doi.org/10.48550/arXiv.2305.00933</a>.
+</div>
+<div id="ref-betancourt_conceptual_2018" class="csl-entry" role="listitem">
+Betancourt, Michael. 2018. <span>“A <span>Conceptual</span> <span>Introduction</span> to <span>Hamiltonian</span> <span>Monte</span> <span>Carlo</span>.”</span> arXiv. <a href="https://doi.org/10.48550/arXiv.1701.02434">https://doi.org/10.48550/arXiv.1701.02434</a>.
+</div>
+<div id="ref-betancourt_identity_2020" class="csl-entry" role="listitem">
+———. 2020. <span>“Identity <span>Crisis</span>.”</span> <a href="https://betanalpha.github.io/assets/case_studies/identifiability.html">https://betanalpha.github.io/assets/case_studies/identifiability.html</a>.
+</div>
+<div id="ref-bosse_scoring_2023" class="csl-entry" role="listitem">
+Bosse, Nikos I., Sam Abbott, Anne Cori, Edwin van Leeuwen, Johannes Bracher, and Sebastian Funk. 2023. <span>“Scoring Epidemiological Forecasts on Transformed Scales.”</span> <em>PLOS Computational Biology</em> 19 (8): e1011393. <a href="https://doi.org/10.1371/journal.pcbi.1011393">https://doi.org/10.1371/journal.pcbi.1011393</a>.
+</div>
+<div id="ref-bosse_evaluating_2024" class="csl-entry" role="listitem">
+Bosse, Nikos I., Hugo Gruson, Anne Cori, Edwin van Leeuwen, Sebastian Funk, and Sam Abbott. 2024. <span>“Evaluating <span>Forecasts</span> with Scoringutils in <span>R</span>.”</span> arXiv. <a href="https://doi.org/10.48550/arXiv.2205.07090">https://doi.org/10.48550/arXiv.2205.07090</a>.
+</div>
+<div id="ref-bracher_evaluating_2021" class="csl-entry" role="listitem">
+Bracher, Johannes, Evan L. Ray, Tilmann Gneiting, and Nicholas G. Reich. 2021. <span>“Evaluating Epidemic Forecasts in an Interval Format.”</span> <em>PLOS Computational Biology</em> 17 (2): e1008618. <a href="https://doi.org/10.1371/journal.pcbi.1008618">https://doi.org/10.1371/journal.pcbi.1008618</a>.
+</div>
+<div id="ref-carias_forecasting_2019" class="csl-entry" role="listitem">
+Carias, Cristina, Justin J O’Hagan, Manoj Gambhir, Emily B Kahn, David L Swerdlow, and Martin I Meltzer. 2019. <span>“Forecasting the 2014 <span>West</span> <span>African</span> <span>Ebola</span> <span>Outbreak</span>.”</span> <em>Epidemiologic Reviews</em> 41 (1): 34–50. <a href="https://doi.org/10.1093/epirev/mxz013">https://doi.org/10.1093/epirev/mxz013</a>.
+</div>
+<div id="ref-conway_joint_2024" class="csl-entry" role="listitem">
+Conway, Eamon, and Ivo Mueller. 2024. <span>“Joint Estimation of the Effective Reproduction Number and Daily Incidence in the Presence of Aggregated and Missing Data.”</span> medRxiv. <a href="https://doi.org/10.1101/2024.06.06.24308584">https://doi.org/10.1101/2024.06.06.24308584</a>.
+</div>
+<div id="ref-doms_assessing_2018" class="csl-entry" role="listitem">
+Doms, Colin, Sarah C. Kramer, and Jeffrey Shaman. 2018. <span>“Assessing the <span>Use</span> of <span>Influenza</span> <span>Forecasts</span> and <span>Epidemiological</span> <span>Modeling</span> in <span>Public</span> <span>Health</span> <span>Decision</span> <span>Making</span> in the <span>United</span> <span>States</span>.”</span> <em>Scientific Reports</em> 8 (1): 12406. <a href="https://doi.org/10.1038/s41598-018-30378-w">https://doi.org/10.1038/s41598-018-30378-w</a>.
+</div>
+<div id="ref-funk_assessing_2019" class="csl-entry" role="listitem">
+Funk, Sebastian, Anton Camacho, Adam J. Kucharski, Rachel Lowe, Rosalind M. Eggo, and W. John Edmunds. 2019. <span>“Assessing the Performance of Real-Time Epidemic Forecasts: <span>A</span> Case Study of <span>Ebola</span> in the <span>Western</span> <span>Area</span> Region of <span>Sierra</span> <span>Leone</span>, 2014-15.”</span> <em>PLOS Computational Biology</em> 15 (2): e1006785. <a href="https://doi.org/10.1371/journal.pcbi.1006785">https://doi.org/10.1371/journal.pcbi.1006785</a>.
+</div>
+<div id="ref-gneiting_strictly_2007" class="csl-entry" role="listitem">
+Gneiting, Tilmann, and Adrian E and Raftery. 2007. <span>“Strictly <span>Proper</span> <span>Scoring</span> <span>Rules</span>, <span>Prediction</span>, and <span>Estimation</span>.”</span> <em>Journal of the American Statistical Association</em> 102 (477): 359–78. <a href="https://doi.org/10.1198/016214506000001437">https://doi.org/10.1198/016214506000001437</a>.
+</div>
+<div id="ref-noauthor_gnu_2006" class="csl-entry" role="listitem">
+<span>“<span>GNU</span> <span>Make</span>.”</span> 2006. Free Software Foundation. <a href="https://www.gnu.org/software/make/">https://www.gnu.org/software/make/</a>.
+</div>
+<div id="ref-jordan_evaluating_2019" class="csl-entry" role="listitem">
+Jordan, Alexander, Fabian Krüger, and Sebastian Lerch. 2019. <span>“Evaluating <span>Probabilistic</span> <span>Forecasts</span> with <span class="nocase">scoringRules</span>.”</span> <em>Journal of Statistical Software</em> 90 (August): 1–37. <a href="https://doi.org/10.18637/jss.v090.i12">https://doi.org/10.18637/jss.v090.i12</a>.
+</div>
+<div id="ref-lambert_epiparameter_2025" class="csl-entry" role="listitem">
+Lambert, Joshua W., Adam Kucharski, and Carmen Tamayo Cuartero. 2025. <span>“Epiparameter: <span>Classes</span> and <span>Helper</span> <span>Functions</span> for <span>Working</span> with <span>Epidemiological</span> <span>Parameters</span>.”</span> <a href="https://epiverse-trace.github.io/epiparameter/">https://epiverse-trace.github.io/epiparameter/</a>.
+</div>
+<div id="ref-lauer_infectious_2020" class="csl-entry" role="listitem">
+Lauer, Stephen A., Alexandria C. Brown, and Nicholas G. Reich. 2020. <span>“Infectious <span>Disease</span> <span>Forecasting</span> for <span>Public</span> <span>Health</span>.”</span> arXiv. <a href="https://doi.org/10.48550/arXiv.2006.00073">https://doi.org/10.48550/arXiv.2006.00073</a>.
+</div>
+<div id="ref-marivate_coronavirus_2020" class="csl-entry" role="listitem">
+Marivate, Vukosi, Riaz Arbi, Herkulaas Combrink, Alta de Waal, Henkho Dryza, Derrick Egersdorfer, Shaun Garnett, et al. 2020. <span>“Coronavirus Disease (<span>COVID</span>-19) Case Data - <span>South</span> <span>Africa</span>.”</span> Zenodo. <a href="https://doi.org/10.5281/zenodo.3819126">https://doi.org/10.5281/zenodo.3819126</a>.
+</div>
+<div id="ref-marivate_use_2020" class="csl-entry" role="listitem">
+Marivate, Vukosi, and Herkulaas MvE Combrink. 2020. <span>“Use of <span>Available</span> <span>Data</span> <span>To</span> <span>Inform</span> <span>The</span> <span>COVID</span>-19 <span>Outbreak</span> in <span>South</span> <span>Africa</span>: <span>A</span> <span>Case</span> <span>Study</span>.”</span> <em>Data Science Journal</em> 19 (1). <a href="https://doi.org/10.5334/dsj-2020-019">https://doi.org/10.5334/dsj-2020-019</a>.
+</div>
+<div id="ref-mcelreath_statistical_2018" class="csl-entry" role="listitem">
+McElreath, Richard. 2018. <em>Statistical Rethinking: <span>A</span> <span>Bayesian</span> Course with Examples in <span>R</span> and <span>Stan</span></em>. Chapman; Hall/CRC.
+</div>
+<div id="ref-meltzer_modeling_2016" class="csl-entry" role="listitem">
+Meltzer, Martin I. 2016. <span>“Modeling in <span>Real</span> <span>Time</span> <span>During</span> the <span>Ebola</span> <span>Response</span>.”</span> <em>MMWR Supplements</em> 65. <a href="https://doi.org/10.15585/mmwr.su6503a12">https://doi.org/10.15585/mmwr.su6503a12</a>.
+</div>
+<div id="ref-mitchell_proper_2017" class="csl-entry" role="listitem">
+Mitchell, K., and C. A. T. Ferro. 2017. <span>“Proper Scoring Rules for Interval Probabilistic Forecasts.”</span> <em>Quarterly Journal of the Royal Meteorological Society</em> 143 (704): 1597–607. <a href="https://doi.org/10.1002/qj.3029">https://doi.org/10.1002/qj.3029</a>.
+</div>
+<div id="ref-murphy_what_1993" class="csl-entry" role="listitem">
+Murphy, Allan H. 1993. <span>“What <span>Is</span> a <span>Good</span> <span>Forecast</span>? <span>An</span> <span>Essay</span> on the <span>Nature</span> of <span>Goodness</span> in <span>Weather</span> <span>Forecasting</span>.”</span> <em>Weather and Forecasting</em> 8 (2): 281–93. <a href="https://doi.org/10.1175/1520-0434(1993)008<0281:WIAGFA>2.0.CO;2">https://doi.org/10.1175/1520-0434(1993)008&lt;0281:WIAGFA&gt;2.0.CO;2</a>.
+</div>
+<div id="ref-nash_estimating_2023" class="csl-entry" role="listitem">
+Nash, Rebecca K., Samir Bhatt, Anne Cori, and Pierre Nouvellet. 2023. <span>“Estimating the Epidemic Reproduction Number from Temporally Aggregated Incidence Data: <span>A</span> Statistical Modelling Approach and Software Tool.”</span> <em>PLOS Computational Biology</em> 19 (8): e1011439. <a href="https://doi.org/10.1371/journal.pcbi.1011439">https://doi.org/10.1371/journal.pcbi.1011439</a>.
+</div>
+<div id="ref-nash_realtime_2022" class="csl-entry" role="listitem">
+Nash, Rebecca K., Pierre Nouvellet, and Anne Cori. 2022. <span>“Real-Time Estimation of the Epidemic Reproduction Number: <span>Scoping</span> Review of the Applications and Challenges.”</span> <em>PLOS Digital Health</em> 1 (6): e0000052. <a href="https://doi.org/10.1371/journal.pdig.0000052">https://doi.org/10.1371/journal.pdig.0000052</a>.
+</div>
+<div id="ref-ogi-gittins_simulation-based_2025" class="csl-entry" role="listitem">
+Ogi-Gittins, Isaac, Nicholas Steyn, Jonathan Polonsky, William S. Hart, Mory Keita, Steve Ahuka-Mundeke, Edward M. Hill, and Robin N. Thompson. 2025. <span>“Simulation-Based Inference of the Time-Dependent Reproduction Number from Temporally Aggregated and Under-Reported Disease Incidence Time Series Data.”</span> <em>Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences</em> 383 (2293): 20240412. <a href="https://doi.org/10.1098/rsta.2024.0412">https://doi.org/10.1098/rsta.2024.0412</a>.
+</div>
+<div id="ref-pic_proper_2024" class="csl-entry" role="listitem">
+Pic, Romain, Clément Dombry, Philippe Naveau, and Maxime Taillardat. 2024. <span>“Proper <span>Scoring</span> <span>Rules</span> for <span>Multivariate</span> <span>Probabilistic</span> <span>Forecasts</span> Based on <span>Aggregation</span> and <span>Transformation</span>.”</span> arXiv. <a href="https://doi.org/10.48550/arXiv.2407.00650">https://doi.org/10.48550/arXiv.2407.00650</a>.
+</div>
+<div id="ref-r_core_team_r_2025" class="csl-entry" role="listitem">
+R Core Team. 2025. <span>“R: <span>A</span> <span>Language</span> and <span>Environment</span> for <span>Statistical</span> <span>Computing</span>.”</span> Vienna, Austria: R Foundation for Statistical Computing. <a href="https://www.R-project.org/">https://www.R-project.org/</a>.
+</div>
+<div id="ref-reich_collaborative_2022" class="csl-entry" role="listitem">
+Reich, Nicholas G., Justin Lessler, Sebastian Funk, Cecile Viboud, Alessandro Vespignani, Ryan J. Tibshirani, Katriona Shea, et al. 2022. <span>“Collaborative <span>Hubs</span>: <span>Making</span> the <span>Most</span> of <span>Predictive</span> <span>Epidemic</span> <span>Modeling</span>.”</span> <em>American Journal of Public Health</em> 112 (6): 839–42. <a href="https://doi.org/10.2105/AJPH.2022.306831">https://doi.org/10.2105/AJPH.2022.306831</a>.
+</div>
+<div id="ref-stan_development_team_stan_2025" class="csl-entry" role="listitem">
+Stan Development Team. 2025. <span>“Stan <span>Modeling</span> <span>Language</span> <span>Reference</span> <span>Manual</span>, Version 2.36.”</span> In <em>Stan <span>Modeling</span> <span>Language</span> <span>Reference</span> <span>Manual</span>, Version 2.36</em>. <a href="https://mc-stan.org/docs/2_36/reference-manual/index.html">https://mc-stan.org/docs/2_36/reference-manual/index.html</a>.
+</div>
+<div id="ref-steyn_primer_2025" class="csl-entry" role="listitem">
+Steyn, Nicholas, Kris V. Parag, Robin N. Thompson, and Christl A. Donnelly. 2025. <span>“A <span>Primer</span> on <span>Inference</span> and <span>Prediction</span> <span>With</span> <span>Epidemic</span> <span>Renewal</span> <span>Models</span> and <span>Sequential</span> <span>Monte</span> <span>Carlo</span>.”</span> <em>Statistics in Medicine</em> 44 (18-19): e70204. <a href="https://doi.org/10.1002/sim.70204">https://doi.org/10.1002/sim.70204</a>.
+</div>
+<div id="ref-tabataba_framework_2017" class="csl-entry" role="listitem">
+Tabataba, Farzaneh Sadat, Prithwish Chakraborty, Naren Ramakrishnan, Srinivasan Venkatramanan, Jiangzhuo Chen, Bryan Lewis, and Madhav Marathe. 2017. <span>“A Framework for Evaluating Epidemic Forecasts.”</span> <em>BMC Infectious Diseases</em> 17 (1): 345. <a href="https://doi.org/10.1186/s12879-017-2365-1">https://doi.org/10.1186/s12879-017-2365-1</a>.
+</div>
+<div id="ref-vehtari_rank-normalization_2021" class="csl-entry" role="listitem">
+Vehtari, Aki, Andrew Gelman, Daniel Simpson, Bob Carpenter, and Paul-Christian Bürkner. 2021. <span>“Rank-Normalization, Folding, and Localization: <span>An</span> Improved $<span>\</span>Widehat{<span>R</span>}$ for Assessing Convergence of <span>MCMC</span>.”</span> <em>Bayesian Analysis</em> 16 (2). <a href="https://doi.org/10.1214/20-BA1221">https://doi.org/10.1214/20-BA1221</a>.
+</div>
+</div></section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
