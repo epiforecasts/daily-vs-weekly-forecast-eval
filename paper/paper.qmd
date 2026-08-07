@@ -229,6 +229,9 @@ modelled reported cases into weekly forecasts corresponding to the dates in the
 observed data. In this work, when we generated forecasts from the weekly
 resolution data, we effectively set Saturday through Thursday as missing (NA's),
 modelled those missing dates, and accumulated the realised reports to Fridays.
+Before fitting, `fill_missing()` was called to insert any absent dates and
+accumulate observations, using an initial accumulation window of $1$ day for
+daily data and $7$ days for weekly data.
 EpiNow2's model, however, does not explicitly model data on the rescaled weekly
 scale, so we made a few modifications to the data and parameters to allow for
 this use case. We mapped each observed week date to one step on a pseudo-daily
@@ -245,20 +248,29 @@ truncated at the 99.9th percentile of the fitted distribution. The generation
 time was set to a Gamma distribution with mean 7.12 days, standard deviation
 1.72 days, and a maximum of 10 days, based on estimates for the SARS-CoV-2 Alpha
 variant [@manica_estimation_2022]. For the rescaled weekly pipeline, the
-parameters of the incubation period and generation time were divided by 7.
+generation time was divided by $7$, giving a Gamma distribution with mean
+$7.12/7$, standard deviation $1.72/7$, and a maximum of $10/7$. The incubation
+period, by contrast, was not obtained from the epiparameter database and
+rescaled; it was specified directly as LogNormal(mean = $5/7$, sd = $1/7$, max =
+$14/7$). The underlying day-scale values (mean $5$ days, standard deviation $1$
+day, maximum $14$ days) approximate, but may not exactly match, the epiparameter
+distribution used in the daily and weekly models.
 
 The reporting delay was specified as a LogNormal distribution with meanlog =
 0.58 and sdlog = 0.47 (corresponding to approximately mean 2 days, standard
-deviation 1 day), truncated at a maximum of 10 days. The prior on the
-time-varying reproduction number $R_t$ was set to LogNormal(meanlog = 0.69,
-sdlog = 0.05), corresponding to an approximate mean of 2 and standard deviation
-of 0.1.
+deviation 1 day), truncated at a maximum of 10 days. For the rescaled weekly
+pipeline, the reporting delay was likewise divided by $7$, specified as
+LogNormal(mean = $2/7$, sd = $1/7$) and truncated at a maximum of $10/7$. The
+prior on the time-varying reproduction number $R_t$ was set to
+LogNormal(meanlog = 0.69, sdlog = 0.05), corresponding to an approximate mean of
+2 and standard deviation of 0.1.
 
 EpiNow2 uses Stan for model fitting and provides the option to use either the
 `cmdstanr` R package [@cmdstanr] or `rstan` R package [@rstan] as the backend.
-We used the former where available, running $4$ chains in parallel with $4$
-cores and returning $5,000$ total posterior samples across all chains, with an
-initial step size of $0.1$.
+We used the former where available, running $4$ chains in parallel using up to
+$4$ cores (or one fewer than the number of detected cores, whichever was
+smaller), and returning $5,000$ total posterior samples across all chains, with
+an initial step size of $0.1$.
 
 When fitting to the data in a sliding window, we allowed the model to be
 refitted (ratchets) until reasonable MCMC convergence and Stan diagnostic
