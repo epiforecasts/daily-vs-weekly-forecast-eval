@@ -178,6 +178,16 @@ The project uses renv for R package management. All dependencies are locked in `
 
 The manuscript is in `paper/paper.qmd` (Quarto format) and renders to PLOS One journal style using the `quarto-journals/plos` extension. A GitHub Actions workflow automatically renders the paper when changes are pushed to main.
 
+`paper/paper_plan.md` tracks proposed manuscript changes, grouped by whether they can be made now or are blocked on regenerating `local/output/`, with a column recording the commit for each. `paper/paper_changes.md` logs changes already made. Update both when editing `paper.qmd`.
+
+### Manuscript writing style
+
+**Do not name functions in the prose.** Describe what the function does instead, so the text reads as a method rather than as an API reference and stays meaningful to readers who do not use the package. For example, write "the input series was completed so that every date in its range was present, with reports accumulated onto the date where the next report occurred" rather than "`fill_missing()` was called".
+
+This applies to functions only. Software *packages* (EpiNow2, scoringutils, `cmdstanr`, `rstan`) should still be named and cited — they identify what was used, and the citations depend on them.
+
+When rewording, check whether the same function is referenced elsewhere in the manuscript; the Discussion often restates a mechanism introduced in the Methods, and both need to change together.
+
 ## Important Notes
 
 - Forecasting is computationally expensive (hours to days for all provinces)

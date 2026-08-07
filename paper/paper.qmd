@@ -204,7 +204,7 @@ observation and reporting patterns:
 
 ## Forecasting
 
-We used EpiNow2's default model (`epinow()`) to generate 2-week ahead (14 days)
+We used EpiNow2's default model to generate 2-week ahead (14 days)
 forecasts of COVID-19 reported cases for each of the nine provinces of South
 Africa.
 
@@ -229,9 +229,10 @@ modelled reported cases into weekly forecasts corresponding to the dates in the
 observed data. In this work, when we generated forecasts from the weekly
 resolution data, we effectively set Saturday through Thursday as missing (NA's),
 modelled those missing dates, and accumulated the realised reports to Fridays.
-Before fitting, `fill_missing()` was called to insert any absent dates and
-accumulate observations, using an initial accumulation window of $1$ day for
-daily data and $7$ days for weekly data.
+Before fitting, EpiNow2 was used to complete each input series so that every
+date in its range was present, with the reports observed on any inserted dates
+accumulated onto the date where the next report occurred. The initial
+accumulation window was $1$ day for daily data and $7$ days for weekly data.
 EpiNow2's model, however, does not explicitly model data on the rescaled weekly
 scale, so we made a few modifications to the data and parameters to allow for
 this use case. We mapped each observed week date to one step on a pseudo-daily
@@ -465,11 +466,11 @@ baseline. This pronounced degradation likely arises because compressing weekly
 intervals into pseudo-daily steps distorts the temporal dynamics that EpiNow2's
 renewal equation is designed to capture: generation times, incubation periods,
 and reporting delays are all divided by seven, fundamentally altering the
-relationship between latent infections and observed cases. EpiNow2's built-in
-`fill_missing()` mechanism, which explicitly models the accumulation of reports
-across days within a week, preserves these epidemiological relationships and
-explains why the standard weekly approach remains competitive with daily
-forecasting.
+relationship between latent infections and observed cases. By contrast,
+retaining the daily latent scale and treating the unreported days as missing ---
+so that the model explicitly accumulates reports across the days within each
+week --- preserves these epidemiological relationships, and explains why the
+standard weekly approach remains competitive with daily forecasting.
 
 The computational requirements of the three approaches present a striking
 counterpoint to their predictive performance. The weekly model, despite
@@ -547,8 +548,9 @@ the following workflow. First, if daily data are available and computational
 resources permit, daily-resolution forecasting with EpiNow2 provides the best
 combination of forecast accuracy and sampling efficiency. Second, when only
 weekly data are available --- or when daily collection and processing costs are
-prohibitive --- the standard weekly approach using EpiNow2's `fill_missing()`
-mechanism can achieve comparable forecast accuracy, provided that sufficient
+prohibitive --- the standard weekly approach, in which the latent process is
+retained on a daily scale and the unreported days are modelled as missing and
+accumulated, can achieve comparable forecast accuracy, provided that sufficient
 computational budget is allocated for adaptive tuning; practitioners should
 expect approximately 5--12 adaptive refits per forecast window and should
 monitor convergence using the diagnostic thresholds described in this study
