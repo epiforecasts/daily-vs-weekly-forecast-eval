@@ -178,7 +178,20 @@ The project uses renv for R package management. All dependencies are locked in `
 
 The manuscript is in `paper/paper.qmd` (Quarto format) and renders to PLOS One journal style using the `quarto-journals/plos` extension. A GitHub Actions workflow automatically renders the paper when changes are pushed to main.
 
-`paper/paper_plan.md` tracks proposed manuscript changes, grouped by whether they can be made now or are blocked on regenerating `local/output/`, with a column recording the commit for each. `paper/paper_changes.md` logs changes already made. Update both when editing `paper.qmd`.
+### Tracking manuscript changes
+
+Two files track work on the manuscript, and **both must be kept current whenever `paper.qmd` is proposed to change or is changed**. They are complementary, not overlapping:
+
+- **`paper/paper_plan.md` — proposed changes.** Anything not yet applied. Grouped by whether it can be done now or is blocked on regenerating `local/output/`, with a Commit column left empty until it lands.
+- **`paper/paper_changes.md` — completed changes.** Chronological history of what has actually been committed, with the commit hash for each.
+
+The required workflow:
+
+1. **When proposing a change**, add a row to `paper_plan.md` with an empty Commit column. Never record a proposal in `paper_changes.md` — that file describes only what exists in the history. The previous revision violated this and left eight proposals filed under "Changes made", written in imperative mood with no hashes; several had silently landed and two had become obsolete.
+2. **When applying a change**, commit `paper.qmd` first, then record the resulting hash in *both* files: fill in the Commit column in `paper_plan.md` (marking the item applied), and add the entry to `paper_changes.md`.
+3. **Cross-reference rather than duplicate.** When one file needs context that lives in the other, link to it by section (e.g. "see `paper_plan.md` section D") instead of restating the content, so the two cannot drift.
+4. **Refresh line references in `paper_plan.md`** after any edit that shifts line numbers, and state which commit they are current as of. Editing the Methods routinely moves the Results and Discussion by a dozen lines.
+5. **Verify every hash is reachable** (`git merge-base --is-ancestor <hash> HEAD`) before recording it. This branch has been rebased before, and orphaned commits still resolve under `git show`, so a stale hash looks valid while pointing at history no longer on any branch.
 
 ### Manuscript writing style
 
