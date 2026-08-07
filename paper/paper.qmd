@@ -266,11 +266,13 @@ criteria, defined below, were achieved. For each ratchet, we tuned Stan's
 adapt-delta parameter to ensure efficient sampling and reliable convergence.
 Following recommendations from members of the Stan Community
 [@betancourt_identity_2020], the adapt-delta parameter was initiated at $0.80$
-and increased by $25/%$ until it reached $0.99$, which is the upper limit in
-Stan. Based on the number of refits needed to go from adapt-delta of $0.8$ to
-$0.99$ in these increments, we determined that each slide could be refitted a
-maximum of $11$ times. At each refit, we continued only when at most two of
-three diagnostic criteria were met (divergences, $\hat{R}$, and bulk ESS). When
+and, at each ratchet, increased by $25\%$ of the remaining distance to the upper
+limit of $0.99$ (i.e. the new value equalled the current value plus one quarter
+of the gap between the current value and $0.99$). Based on the number of refits
+needed to go from adapt-delta of $0.80$ to $0.99$ in these increments, we
+determined that each slide could be refitted a maximum of $11$ times. At each
+refit, we continued only when fewer than two of three diagnostic criteria were
+met (divergences, $\hat{R}$, and bulk ESS). When
 the ratchet limit was reached, we returned the last model output irrespective of
 the diagnostic measurements.
 
