@@ -39,6 +39,7 @@ demonstrating it may not.
 |---|---|---|---|
 | A1 | `paper.qmd:269` | `$25/%$` was a malformed `25\%` that also read as 25% of the current value. `ratchet_control()` computes `adapt_delta + (1 - adapt_delta) * 0.25`, i.e. 25% of the remaining distance to 0.99. Restored the explicit wording. | `a799eac` |
 | A2 | `paper.qmd:272` | "we continued only when **at most two** of three diagnostic criteria were met" contradicted `keep_running()`, which continues while `(passingmcmc < 2)`. Two passing criteria is a *stopping* condition. Changed to "fewer than two". | `a799eac` |
+| A3 | `paper.qmd:207`, `232-235`, `468-472`, `550-552` | Removed inline function names from the prose in favour of describing what each does — the `epinow()` reference in Methods, and the three `fill_missing()` references in Methods and Discussion. Package names (EpiNow2, `cmdstanr`, `rstan`) retained, since they identify the software and carry the citations. Convention recorded in `CLAUDE.md` under "Manuscript writing style". | `93a2029` |
 
 Both were regressions, not original errors: `430ec0e` (2026-04-11) fixed them,
 and `51032ec` ("Reformatted paper in terms of line lengths") silently reverted
