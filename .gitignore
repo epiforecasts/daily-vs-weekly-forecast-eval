@@ -4,6 +4,7 @@ local.makefile
 .Rhistory
 .RData
 .Ruserdata
+.html
 
 local/*
 !local/figures/
