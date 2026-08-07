@@ -1,238 +1,137 @@
 # Paper changes log
 
-Summary of changes made to `paper/paper.qmd` to align the manuscript
-with the implemented analysis code.
+History of changes to `paper/paper.qmd` (and its supporting files), in
+chronological order. This file records what **has** been done; `paper_plan.md`
+records what is **still to** be done, including the items blocked on
+regenerating `local/output/`.
 
-## Changes made
+> **Note on commit hashes.** An earlier revision of this log recorded hashes
+> from before the `paper-updates` branch was rebased. Those commits still exist
+> as unreachable objects, so `git show` finds them, but they are not on any
+> branch and will disappear at the next `gc`. All hashes below have been
+> re-derived from the current branch and verified reachable from `HEAD`.
 
-### 1. Fix adapt-delta ratchet description (Methods §Forecasting)
+## Origin
 
-**Commit:** `460351a`
+| Commit | Date | Change |
+|---|---|---|
+| `ffa5659` | 2025-12-23 | Transferred manuscript content from the PDF into `paper.qmd` |
+| `810b422` | 2025-12-23 | General update to `paper.qmd` |
+| `6ff8b52` | 2025-12-23 | Converted the title to sentence case |
 
-Paper said the adapt-delta parameter was "increased by 25 % of the
-previous value". The code (`ratchet_control()` in
-`R/pipeline_shared_inputs.R`) increases by 25 % of the **remaining
-distance to 0.99**, i.e. `adapt_delta + (1 - adapt_delta) * 0.25`.
-Reworded to match.
+## Pipeline figure and narrative pass (Feb 2026)
 
-### 2. Clarify sampling configuration (Methods §Forecasting)
+| Commit | Date | Change |
+|---|---|---|
+| `07e27ad` | 2026-02-17 | Updated the Methods and Results narrative to reference the pipeline figure; added `analysis_pipeline.mermaid` |
+| `a519746` | 2026-02-17 | Applied a one-line code-review suggestion |
 
-**Commit:** `4924fe9`
+## Code-alignment pass (11 Apr 2026)
 
-Paper said "5,000 posterior samples or 1500 iterations per chain" and
-a fixed "4 cores". The code sets `samples = 5000` (total across
-chains) and `cores = min(parallel::detectCores() - 1, 4)`. Removed
-the ambiguous per-chain phrasing and noted the adaptive core count.
+Ten commits reconciling the manuscript with what the code actually does. These
+were previously logged as entries 1–10 against pre-rebase hashes.
 
-### 3. Add missing-data accumulation detail (Methods §Forecasting)
+| # | Commit | Change |
+|---|---|---|
+| 1 | `430ec0e` | **Adapt-delta ratchet description.** Paper said adapt-delta was "increased by 25% of the previous value". `ratchet_control()` increases by 25% of the **remaining distance to 0.99**, i.e. `adapt_delta + (1 - adapt_delta) * 0.25`. Reworded to match. |
+| 2 | `4921e40` | **Sampling configuration.** Paper said "5,000 posterior samples or 1500 iterations per chain" and a fixed "4 cores". Code sets `samples = 5000` (total across chains) and `cores = min(parallel::detectCores() - 1, 4)`. Removed the per-chain phrasing and noted the adaptive core count. |
+| 3 | `5c15fbe` | **Missing-data accumulation.** Added that the series is completed before fitting with different accumulation windows: 1 day for daily data, 7 days for weekly (`R/pipeline_main.R`). |
+| 4 | `5ef5f8f` | **Rescaled-weekly date mechanics.** Expanded the vague "mapped to one step on a compressed pseudo-daily time axis" to describe replacing weekly dates with consecutive daily dates, dividing delay and generation-time parameters by 7, the 10/2 pseudo-day windows, and remapping forecast dates back to calendar weeks. |
+| 5 | `c94f8aa` | **CRPS alignment procedure.** Described the join, cumulative-sum and differencing steps implemented in `join_and_score()`, replacing the unexplained "accumulated between observed report dates". |
+| 6 | `8c58575` | **Removed erroneous scoringRules citation.** Only `scoringutils` is imported (`R/score.R`); `scoringRules` is used nowhere. Citation and reference removed. |
+| 7 | `37bb643` | **Defined elapsed fitting time** as the maximum across chains of combined warmup and sampling time, summed over all ratchets within a slide. |
+| 8 | `b891cc2` | **Geometric-mean CRPS computation.** Specified it as the exponentiated mean of the log-ratios, stratified by province, forecast type and evaluation resolution. Also fixed "a time of" → "a time series of". |
+| 9 | `a7d5601` | **Author summary drafted**, replacing the "to be inserted" placeholder. |
+| 10 | `82cd60f` | **Results narrative drafted** for all three figures — forecast performance, computational diagnostics, and relative performance across provinces. |
 
-**Commit:** `8c8655e`
+## Supplementary materials and prose completion (12 Apr 2026)
 
-The paper did not explain that `fill_missing()` is called before
-fitting with different accumulation windows: `initial_accumulate = 1`
-for daily data and `initial_accumulate = 7` for weekly data
-(`R/pipeline_main.R`, lines 78–80). Added a sentence.
+| Commit | Date | Change |
+|---|---|---|
+| `62ccef4` | 2026-04-12 | Large combined commit (details below) |
+| `84fbddd` | 2026-04-12 | Fixed an author affiliation; extended `supplementary.qmd` |
 
-### 4. Expand rescaled-weekly date mechanics (Methods §Forecasting)
+`62ccef4` implemented, in a single commit, everything the previous revision of
+this log listed as unfinished proposals in entries 11–16:
 
-**Commit:** `2bfed17`
+- **Model parameter values** added to Methods §Forecasting — incubation period
+  (LogNormal from epiparameter, truncated at the 99.9th percentile), generation
+  time (Gamma, mean 7.12, sd 1.72, max 10), reporting delay (LogNormal,
+  meanlog 0.58, sdlog 0.47, max 10), and the $R_t$ prior (LogNormal,
+  meanlog 0.69, sdlog 0.05).
+- **Hardcoded rescaled incubation period** noted — a fixed
+  LogNormal(mean = 5/7, sd = 1/7, max = 14/7) rather than a runtime epiparameter
+  query. *Later deleted by `51032ec` and restored by `89a58a7`; see below.*
+- **Non-default step size** of 0.1 documented (Stan's default is 1).
+- **Slide skip condition** documented — slides whose training window held fewer
+  non-zero observations than twice the forecast horizon were skipped.
+- **Generation-time citation** `@manica_estimation_2022` added.
+- **Bibliography entries** `linton_incubation_2020` and `manica_estimation_2022`
+  added to `bibliography.bib`.
 
-The original text was vague ("mapped to one step on a compressed
-pseudo-daily time axis"). Expanded to describe:
+It also created `paper/supplementary.qmd`, added the `supplementary` and
+`manuscripts` Make targets, and rendered both PDFs.
 
-- Replacing weekly calendar dates with consecutive daily dates
-  (`R/pipeline_rescaled_weekly.R`, lines 65–72).
-- Dividing all delay and generation-time parameters by 7
-  (lines 29–38).
-- Training window of 10 pseudo-days / forecast horizon of 2
-  pseudo-days (matching `train_window_rescaled = 10` and
-  `test_window_rescaled = 2` in `R/pipeline_shared_inputs.R`).
-- Remapping forecast dates back to calendar weeks after fitting
-  (lines 175–186).
+Two further entries in the previous revision of this log (17 and 18) proposed
+adding `[TODO: …]` prose templates to the Results and Discussion. They are
+**obsolete**: `82cd60f` and `62ccef4` wrote the actual prose, and no TODO
+placeholders remain in `paper.qmd`.
 
-### 5. Detail forecast–observation alignment for CRPS (Methods §Scoring)
+## Regression and recovery (Aug 2026)
 
-**Commit:** `5733d56`
+| Commit | Date | Change |
+|---|---|---|
+| `51032ec` | 2026-08-06 | **Labelled "Reformatted paper in terms of line lengths", but was a substantive rewrite** (+449/-81 lines) |
+| `a799eac` | 2026-08-07 | Restored adapt-delta and stopping-criterion wording |
+| `89a58a7` | 2026-08-07 | Restored Methods detail lost in the reflow |
+| `93a2029` | 2026-08-07 | Replaced function names in the prose with descriptions of what they do |
 
-Paper said predictions are "accumulated between observed report
-dates" but did not explain the mechanism. Added a sentence describing
-the join → cumulative-sum → differencing procedure implemented in
-`join_and_score()` (`R/pipeline_shared_inputs.R`, lines 34–48).
+Most of `51032ec` was genuine improvement — expanded weekly-accumulation and
+rescaled-weekly mechanics, the three-way summary of what each data input
+represents, and the slide skip condition moved to a better location. But a
+word-diff against its parent shows it silently reverted or deleted five things:
 
-### 6. Remove erroneous scoringRules citation (Methods §Scoring)
+1. **Adapt-delta wording** (undoing change 1): "25% of the remaining distance to
+   0.99" became the malformed `$25/%$`, which also reads as 25% of the current
+   value. Restored in `a799eac`.
+2. **Stopping criterion**: "fewer than two of three diagnostic criteria" became
+   "at most two". `keep_running()` continues while `(passingmcmc < 2)`, so two
+   passing criteria is a *stopping* condition. Restored in `a799eac`.
+3. **Core count** (undoing change 2): reverted to a flat "4 cores". Restored in
+   `89a58a7`.
+4. **Missing-data accumulation sentence** (undoing change 3): deleted outright.
+   The Discussion still credited this mechanism for the paper's central finding
+   and recommended it to practitioners, leaving it undescribed in Methods.
+   Restored in `89a58a7`.
+5. **Hardcoded rescaled incubation period**: deleted and replaced with the
+   inaccurate claim that the incubation period was "divided by 7".
+   `R/pipeline_rescaled_weekly.R:32` hardcodes an approximation instead, which
+   is what Discussion limitation 3 already said. Corrected in `89a58a7`, which
+   also documented the rescaled reporting delay (genuinely divided by 7).
 
-**Commit:** `a1cd38b`
+**Lesson:** a commit labelled as formatting changed the meaning of three Methods
+claims. Word-diff any future reflow commit (`git diff -w --word-diff=plain`)
+before trusting the label.
 
-Paper cited both `scoringutils` and `scoringRules`. Only
-`scoringutils` is imported (in `R/score.R`); `scoringRules` is not
-used anywhere. Removed the `scoringRules` citation and reference.
+`93a2029` then removed inline function references from the prose in favour of
+describing what each function does, per the manuscript writing style now
+recorded in `CLAUDE.md`. Package names are still cited.
 
-### 7. Define elapsed fitting time (Methods §Scoring)
+## Resolved elsewhere
 
-**Commit:** `81419ef`
+### `rhat` vs `max_rhat` column mismatch
 
-Paper referred to "elapsed fitting time" without defining it. Added
-that it is the maximum across chains of the combined warmup and
-sampling time, summed over all ratchets within a slide (matching
-`elapsed_time()` in `R/pipeline_shared_inputs.R` lines 127–132 and
-the accumulation in `R/pipeline_main.R` line 118).
+Previously listed here as "not addressed", pending a PR on the
+`fix/max-rhat-naming` branch. That work **has landed** as `b5848ef`
+(2026-04-11), reachable from `HEAD`.
 
-### 8. Clarify geometric-mean CRPS computation (Methods §Scoring)
+This was more consequential than a naming tidy-up. `keep_running()` tested
+`dgn$rhat`, but `get_stan_diagnostics()` only emits `max_rhat`, so `dgn$rhat`
+was `NULL`, `NULL < 1.01` evaluated to `logical(0)`, and the element vanished
+from the `c()`. The accept rule therefore ran on a **two**-element vector,
+stopping only when both divergences and bulk ESS passed, instead of on any two
+of three.
 
-**Commit:** `3d8eab7`
-
-Paper said "computed the geometric mean relative to the model using
-daily data" without specifying the formula or stratification.
-Clarified that the geometric mean is computed as the exponentiated
-mean of the log-ratios, stratified by province, forecast type, and
-evaluation resolution (matching `R/fig_crps_summary_all_provs.R`
-line 50). Also fixed typo ("a time of" → "a time series of").
-
-### 9. Draft author summary (Frontmatter)
-
-**Commit:** `966a0ae`
-
-Replaced the placeholder "Author summary to be inserted" with a
-summary describing the motivation, approach, key findings, and
-practical relevance.
-
-### 10. Draft Results narrative (Results)
-
-**Commit:** `142de5c`
-
-The Results section contained only figure environment blocks and no
-accompanying text. Added three sub-sections with prose describing:
-
-- **Forecast performance:** CRPS tracks incidence level; daily and
-  weekly targets perform comparably; rescaled weekly consistently
-  higher.
-- **Computational diagnostics:** rescaled weekly has highest ESS/sec;
-  weekly model has the lowest and requires the most ratchets.
-- **Relative performance across provinces:** geometric-mean CRPS
-  ratios cluster near 2–3x for weekly-vs-daily on daily test data;
-  ~1x on weekly test data; ~30–60x for rescaled weekly.
-
-### 11. Add model parameter values (Gap A)
-
-Insert a new paragraph in Methods §Forecasting (after the
-observation-model paragraph) listing the specific distributional
-forms and values used for fitting:
-
-- **Incubation period:** LogNormal from epiparameter, truncated at
-  the 99.9th percentile (citing Linton et al. 2020 and the
-  epiparameter package).
-- **Generation time:** Gamma(mean = 7.12, sd = 1.72, max = 10),
-  citing Manica et al. 2022 (Alpha variant estimate).
-- **Reporting delay:** LogNormal(meanlog = 0.58, sdlog = 0.47,
-  max = 10), corresponding to approximately mean 2, sd 1 day.
-- **Rt prior:** LogNormal(meanlog = 0.69, sdlog = 0.05),
-  corresponding to approximately mean 2, sd 0.1.
-
-Code references: `R/pipeline_main.R` lines 33–55.
-
-### 12. Note hardcoded rescaled-weekly incubation period (Gap B)
-
-Add a sentence to the Data §rescaled-weekly paragraph noting that
-the rescaled pipeline uses a fixed LogNormal(mean = 5/7, sd = 1/7,
-max = 14/7) incubation period rather than querying epiparameter at
-runtime. The underlying day-scale values (mean = 5, sd = 1, max = 14)
-approximate but may not exactly match the epiparameter distribution.
-
-Code reference: `R/pipeline_rescaled_weekly.R` line 29.
-
-### 13. Mention non-default stepsize (Gap C)
-
-Add "and an initial step size of 0.1" to the MCMC configuration
-sentence in Methods §Forecasting. `stepsize = 0.1` is a non-default
-Stan control option; the default is 1.
-
-Code reference: `R/pipeline_shared_inputs.R` line 184.
-
-### 14. Document slide skip condition (Gap D)
-
-Add a sentence stating that slides where the training window
-contained fewer non-zero observations than twice the forecast horizon
-were skipped, producing no forecast for that window.
-
-Code references: `R/pipeline_main.R` line 89,
-`R/pipeline_rescaled_weekly.R` line 85.
-
-### 15. Cite generation-time source (Gap F)
-
-Add `@manica_estimation_2022` citation alongside the generation
-time parameter values in the new parameter paragraph.
-
-Code reference: `R/pipeline_main.R` line 45 (code comment).
-
-### 16. Add bibliography entries
-
-Add two new entries to `paper/bibliography.bib`:
-
-- `linton_incubation_2020` — Linton et al. (2020), "Incubation
-  Period and Other Epidemiological Characteristics of 2019 Novel
-  Coronavirus Infections with Right Truncation", Journal of Clinical
-  Medicine, doi:10.3390/jcm9020538.
-- `manica_estimation_2022` — Manica et al. (2022), "Estimation of the
-  incubation period and generation time of SARS-CoV-2 Alpha and Delta
-  variants from contact tracing data", Epidemiology and Infection,
-  doi:10.1017/S0950268822001947.
-
-### 17. Add Results section prose templates
-
-The Results section currently contains only figure environments with
-no accompanying narrative. Add prose templates with `[TODO: …]`
-placeholders under three subsections:
-
-- **Forecast performance:** Introduce EC as a representative
-  province, reference `@fig-panel-scores-EC`, and include
-  placeholders describing how CRPS tracks incidence level, the
-  relative performance of daily vs weekly forecasts against daily
-  and weekly observations, and rescaled-weekly performance.
-- **Computational diagnostics:** Reference
-  `@fig-panel-diagnostics-EC` and include placeholders for ESS/sec
-  ordering between model types, ratchet frequency by model type,
-  and consistency of patterns across provinces.
-- **Relative performance across provinces:** Reference
-  `@fig-crps-all-provs-summarised` and include placeholders for
-  geometric-mean CRPS ratios (weekly-vs-daily on daily obs,
-  weekly-vs-daily on weekly obs, rescaled-weekly on weekly obs),
-  province-to-province variability, and the position of the
-  national aggregate (RSA).
-
-### 18. Add Discussion section prose templates
-
-The Discussion currently has four paragraphs covering trade-offs,
-stakeholders, public health alignment, and the evaluation framework.
-Insert `[TODO: …]` template paragraphs between the existing text
-(preserving all current paragraphs) for the following topics:
-
-- **After para 1** (trade-offs intro): Summarise the key
-  forecast-performance finding — daily and weekly inputs yield
-  comparable CRPS while the rescaled weekly approach performs
-  substantially worse — with placeholders for specific ratios.
-- **After the above:** Computational trade-offs — the weekly model
-  requires the most adaptive refits and has the lowest sampling
-  efficiency, while the rescaled weekly model achieves high ESS/sec
-  but poor predictive performance.
-- **After para 3** (public health alignment): Limitations — single
-  forecasting framework (EpiNow2), single disease and geography,
-  hardcoded incubation period in the rescaled pipeline, and
-  reliance on reported case data subject to surveillance artefacts.
-- **After limitations:** Related work — Nash et al. (2023),
-  Ogi-Gittins et al. (2025), Steyn et al. (2025) — extending
-  the literature by jointly assessing forecast scoring with
-  convergence diagnostics.
-- **After para 4** (evaluation framework): Practical guidance for
-  practitioners choosing between daily and weekly data inputs,
-  including the adaptive tuning workflow and the combined use of
-  scoring rules with convergence diagnostics.
-
----
-
-## Not addressed
-
-### Gap E — `rhat` vs `max_rhat` column mismatch
-
-Fixed in a separate PR on the `fix/max-rhat-naming` branch (changing
-`dgn$rhat` to `dgn$max_rhat` in `keep_running()` in
-`R/pipeline_shared_inputs.R`). This is a code bug, not a paper gap.
+Every artefact in `local/output/` predates this fix, so all quantitative results
+in the manuscript are provisional. See `paper_plan.md` section D for the eight
+claims blocked on regeneration.
