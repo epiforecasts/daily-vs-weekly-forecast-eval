@@ -20,6 +20,10 @@ renv/*
 !renv/activate.R
 !renv/settings.json
 
+# SLURM job logs and container image
+slurm/logs/
+*.sif
+
 # Paper rendering artifacts
 paper/*.tex
 paper/*.bst

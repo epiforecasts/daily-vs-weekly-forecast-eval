@@ -188,9 +188,50 @@ read_bulk_and_rbind <- function(files, out_type) {
     rbindlist(idcol = "type", fill = TRUE)
 }
 
+#' @title Cores available to this process
+#' @description
+#' Returns the number of cores this process may use. Under SLURM,
+#' `parallel::detectCores()` reports every core on the compute node rather than
+#' the cores allocated to the job, so a job granted `--cpus-per-task=4` on a
+#' 64-core node would otherwise start 63 workers and be throttled by the
+#' scheduler. When `SLURM_CPUS_PER_TASK` is set we trust it; otherwise we fall
+#' back to the local heuristic of leaving one core free.
+#'
+#' The result is also used to cap `data.table`'s thread pool, which defaults to
+#' half the machine's cores and is likewise unaware of the allocation.
+#'
+#' @param max_cores Upper bound on the returned value. Defaults to 4, since the
+#'   Stan fits use 4 chains and additional cores go unused.
+#'
+#' @returns A single positive integer.
+#' @export
+#'
+#' @examples
+#' available_cores()
+available_cores <- function(max_cores = 4) {
+  slurm_cores <- suppressWarnings(
+    as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", unset = NA))
+  )
+
+  cores <- if (!is.na(slurm_cores) && slurm_cores > 0) {
+    slurm_cores
+  } else {
+    parallel::detectCores() - 1
+  }
+
+  max(1L, min(cores, max_cores))
+}
+
 ####################################
 # Inputs
 ####################################
+
+# Number of cores this process may use; respects a SLURM allocation when
+# running on the cluster (see README_HPC.md).
+n_cores <- available_cores()
+
+# data.table otherwise grabs half the node's cores regardless of the allocation
+data.table::setDTthreads(n_cores)
 
 # Starting stan controls to be retuned
 control_opts <- list(
@@ -203,7 +244,7 @@ control_opts <- list(
 stan <- stan_opts(
   samples = 5000,
   control = control_opts,
-  cores = min(parallel::detectCores() - 1, 4),
+  cores = n_cores,
   backend = if (require(cmdstanr)) "cmdstanr" else "rstan"
 )
 
