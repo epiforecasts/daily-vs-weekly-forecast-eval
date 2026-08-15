@@ -95,7 +95,7 @@ score_plt <-
     ) +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
     scale_y_log10() +
-    scale_color_brewer(na.translate = FALSE, palette = "Dark2") +
+    scale_color_manual(values = target_colors, na.translate = FALSE) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
     facet_wrap(~data, ncol = 1, strip.position = "right") +
     labs(y = "CRPS (log10)",
