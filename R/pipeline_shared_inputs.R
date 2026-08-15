@@ -1,6 +1,19 @@
 library(EpiNow2) # Needed to setup EpiNow2 modules
 
 ####################################
+# Plotting
+####################################
+# Fixed colors for forecast targets (daily, weekly, rescale), shared across
+# figure scripts so the same target always maps to the same color regardless
+# of which targets/aesthetics (color vs fill) are present in a given plot.
+# Values are RColorBrewer::brewer.pal(3, "Dark2").
+target_colors <- c(
+  daily = "#1B9E77",
+  weekly = "#D95F02",
+  rescale = "#7570B3"
+)
+
+####################################
 # Functions
 ####################################
 #' Extract columns

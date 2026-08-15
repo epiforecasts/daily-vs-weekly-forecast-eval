@@ -90,7 +90,7 @@ ratchets_plot <- ggplot(data = daily_cases) +
         position = position_dodge2()
     ) +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
-    scale_color_brewer(na.translate = FALSE, palette = "Dark2") +
+    scale_fill_manual(values = target_colors, na.translate = FALSE) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
     labs(x = "Date", y = "ratchets", fill = "Forecast target")
 
@@ -139,7 +139,7 @@ diagnostics_plt <-
     ) +
     scale_y_log10() +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
-    scale_color_brewer(na.translate = FALSE, palette = "Dark2") +
+    scale_color_manual(values = target_colors, na.translate = FALSE) +
     labs(
         # title = "Effective sample size per second",
         x = "Date",
