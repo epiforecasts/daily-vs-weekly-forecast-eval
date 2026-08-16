@@ -19,13 +19,13 @@ Rscript install.R              # Initialize renv environment and restore package
 
 **Running Analyses:**
 ```bash
-make                            # Runs default target (all_scores_panel_figs)
+make                            # Runs default target (all_figs)
 make local/figures/fig_panel_GP.png  # Generate results for single province (GP)
 make test                       # Test with single province (default: GP, override with ONEPROV=WC)
 make allextracts               # Generate all data extracts (daily/weekly for all provinces)
 make all_forecasts             # Generate all forecast outputs
 make all_scores                # Generate all score outputs
-make all_panel_figs            # Generate all panel figures (scores + diagnostics)
+make all_figs                  # Generate all figures (scores + diagnostics panels + CRPS summary)
 ```
 
 **Paper Rendering:**

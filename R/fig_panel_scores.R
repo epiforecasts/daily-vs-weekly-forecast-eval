@@ -99,7 +99,6 @@ score_plt <-
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
     facet_wrap(~data, ncol = 1, strip.position = "right") +
     labs(y = "CRPS (log10)",
-         linetype = "Data",
          color = "Forecast target"
     )
 
@@ -112,5 +111,6 @@ panel_fig <- (cases_plt / score_plt) &
     theme_minimal() &
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
+if (interactive()) print(panel_fig)
 
 ggsave(tail(.args, 1), panel_fig, bg = "white", width = 12, height = 6)
