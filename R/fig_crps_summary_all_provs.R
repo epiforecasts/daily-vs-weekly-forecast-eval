@@ -132,5 +132,6 @@ rel_plot <- ggplot(data = geomean_dt[slide_counts, on = .(data)]) +
 #         axis.text.x = element_text(size = 14)
 #     )
 
+if (interactive()) print(rel_plot)
 
 ggsave(tail(.args, 1), rel_plot, bg = "white", width = 12, height = 6)

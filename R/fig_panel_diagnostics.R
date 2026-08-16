@@ -90,9 +90,11 @@ ratchets_plot <- ggplot(data = daily_cases) +
         position = position_dodge2()
     ) +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
-    scale_color_brewer(na.translate = FALSE, palette = "Dark2") +
+    scale_fill_manual(values = target_colors, na.translate = FALSE) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
     labs(x = "Date", y = "ratchets", fill = "Forecast target")
+
+if (interactive()) print(ratchets_plot)
 
 # Add the dates by slide
 diagnostics_dt <- diagnostics_dt[
@@ -108,7 +110,11 @@ diagnostics_dt_long <- melt(
     value.name = "ess_value"
 )
 
-# Calculate ESS per sec
+# Calculate ESS per sec. Note that the stan_elapsed_time used here is the
+# cumulative across all refits, so should be interpreted carefully.
+# An alternative would be to use the last elapsed time before the while loop
+# is exited in the pipeline. We could report that ESS per sec alongside the
+# crude run times.
 diagnostics_dt_long[, ess_per_sec := ess_value/stan_elapsed_time]
 
 # Shorten ess_type values
@@ -139,13 +145,12 @@ diagnostics_plt <-
     ) +
     scale_y_log10() +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
-    scale_color_brewer(na.translate = FALSE, palette = "Dark2") +
+    scale_color_manual(values = target_colors, na.translate = FALSE) +
     labs(
         # title = "Effective sample size per second",
         x = "Date",
         y = "ESS tail per sec (log10)",
-        color = "Forecast target",
-        linetype = "Data"
+        color = "Forecast target"
     ) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -156,5 +161,7 @@ panel_fig <- (cases_plt/diagnostics_plt/ratchets_plot) &
     plot_annotation(title = paste(daily_cases$province[1])) &
     theme_minimal() &
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+if (interactive()) print(panel_fig)
 
 ggsave(tail(.args, 1), panel_fig, bg = "white", width = 12, height = 6)

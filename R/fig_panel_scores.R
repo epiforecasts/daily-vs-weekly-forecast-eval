@@ -95,11 +95,10 @@ score_plt <-
     ) +
     scale_x_date(NULL, date_breaks = "month", date_labels = "%b '%y") +
     scale_y_log10() +
-    scale_color_brewer(na.translate = FALSE, palette = "Dark2") +
+    scale_color_manual(values = target_colors, na.translate = FALSE) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
     facet_wrap(~data, ncol = 1, strip.position = "right") +
     labs(y = "CRPS (log10)",
-         linetype = "Data",
          color = "Forecast target"
     )
 
@@ -112,5 +111,6 @@ panel_fig <- (cases_plt / score_plt) &
     theme_minimal() &
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
+if (interactive()) print(panel_fig)
 
 ggsave(tail(.args, 1), panel_fig, bg = "white", width = 12, height = 6)
