@@ -94,6 +94,8 @@ ratchets_plot <- ggplot(data = daily_cases) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
     labs(x = "Date", y = "ratchets", fill = "Forecast target")
 
+if (interactive()) print(ratchets_plot)
+
 # Add the dates by slide
 diagnostics_dt <- diagnostics_dt[
     slide_dates_dictionary,
@@ -144,8 +146,7 @@ diagnostics_plt <-
         # title = "Effective sample size per second",
         x = "Date",
         y = "ESS tail per sec (log10)",
-        color = "Forecast target",
-        linetype = "Data"
+        color = "Forecast target"
     ) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -156,5 +157,7 @@ panel_fig <- (cases_plt/diagnostics_plt/ratchets_plot) &
     plot_annotation(title = paste(daily_cases$province[1])) &
     theme_minimal() &
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+if (interactive()) print(panel_fig)
 
 ggsave(tail(.args, 1), panel_fig, bg = "white", width = 12, height = 6)
