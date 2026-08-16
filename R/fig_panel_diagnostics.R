@@ -109,10 +109,10 @@ diagnostics_dt_long <- melt(
 )
 
 # Calculate ESS per sec. Note that the stan_elapsed_time used here is the
-# cumulative of all refits, so should be interpreted carefully.
+# cumulative across all refits, so should be interpreted carefully.
 # An alternative would be to use the last elapsed time before the while loop
 # is exited in the pipeline. We could report that ESS per sec alongside the
-# crude run times
+# crude run times.
 diagnostics_dt_long[, ess_per_sec := ess_value/stan_elapsed_time]
 
 # Shorten ess_type values
