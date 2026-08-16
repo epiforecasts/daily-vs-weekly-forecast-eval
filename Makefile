@@ -145,6 +145,36 @@ all_figs: all_scores_panel_figs all_diagnostics_panel_figs all_provs_crps_summar
 
 test: ${FIGDIR}/fig_panel_scores_${ONEPROV}.png ${FIGDIR}/fig_panel_diagnostics_${ONEPROV}.png
 
+###############################
+# HPC / SLURM support
+###############################
+# see README_HPC.md
+
+SLURMDIR := slurm
+SCALES := daily weekly rescale
+
+# lets shell scripts read makefile variables, e.g. `make -s print-REFDIR`,
+# rather than duplicating them
+print-%:
+	@echo ${$*}
+
+# one "SCALE PROVINCE" line per forecast, indexed by $SLURM_ARRAY_TASK_ID in
+# slurm/forecast_array.sh; generated from ${PROVINCES} so the two cannot drift
+FORECAST_UNITS := $(foreach s,${SCALES},$(foreach p,${PROVINCES} RSA,${s}:${p}))
+
+${SLURMDIR}/targets.txt: Makefile
+	@rm -f $@
+	@for unit in ${FORECAST_UNITS}; do echo $$unit | tr ':' ' ' >> $@; done
+	@echo "wrote $$(wc -l < $@ | tr -d ' ') forecast targets to $@"
+
+# everything the array job needs before it starts: the manifest, a place for
+# the logs, and the data extracts (which need outbound network access and so
+# cannot be left to the compute nodes)
+hpc_prep: ${SLURMDIR}/targets.txt allextracts
+	@mkdir -p ${SLURMDIR}/logs
+
+.PHONY: hpc_prep print-%
+
 # Paper rendering
 PAPERDIR := paper
 PAPERSRC := ${PAPERDIR}/paper.qmd
