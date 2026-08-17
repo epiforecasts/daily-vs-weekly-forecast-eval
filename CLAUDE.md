@@ -30,7 +30,7 @@ make all_figs                  # Generate all figures (scores + diagnostics pane
 
 **Paper Rendering:**
 ```bash
-make paper                      # Render paper/paper.qmd to paper/paper.pdf
+make paper_main_text            # Render paper/paper.qmd to paper/paper.pdf
 cd paper && quarto render paper.qmd  # Alternative: render directly with Quarto
 ```
 
@@ -46,7 +46,6 @@ make test ONEPROV=WC           # Run test pipeline for Western Cape
   - `local/figures/`: Generated figures and visualizations
   - `local/output/`: Forecast results, scores, and diagnostics
 - `R/`: Core analysis scripts (reusable functions)
-- `main/`: Legacy/exploratory scripts (not used in main pipeline)
 - `paper/`: Quarto manuscript and bibliography
 - `renv/`: R package environment (managed by renv)
 
@@ -56,8 +55,8 @@ make test ONEPROV=WC           # Run test pipeline for Western Cape
 
 The analysis follows a Make-driven pipeline with distinct stages:
 
-1. **Data Acquisition** (`get_data.R` → `raw.csv`)
-   - Downloads South African provincial COVID-19 data from DSFSI GitHub
+1. **Data Acquisition** (`Makefile` `DATAURL` rule → `raw.csv`)
+   - Downloads South African provincial COVID-19 data from DSFSI GitHub via `curl`
 
 2. **Data Import** (`R/import.R` → `intermediate.rds`)
    - Type conversion and pivoting raw CSV to long format
@@ -205,7 +204,6 @@ When rewording, check whether the same function is referenced elsewhere in the m
 
 - Forecasting is computationally expensive (hours to days for all provinces)
 - Start testing with a single province: `make test`
-- The `main/` directory contains legacy exploratory code; active pipeline is in `R/`
 - Command-line arguments in R scripts use pattern: `commandArgs(trailingOnly = TRUE)`
 - Interactive mode (in RStudio/R console) uses `.args` defined at script top
 - All R scripts source `R/pipeline_shared_inputs.R` for shared functions and parameters
