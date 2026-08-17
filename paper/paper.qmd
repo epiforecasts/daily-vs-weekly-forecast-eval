@@ -54,9 +54,9 @@ affiliations:
     state: North Carolina
     country: United States
 abstract: |
-  Infectious disease forecasting is useful for public health decision-making, including resource allocation and the timing of outbreak response interventions. Forecast quality is impacted by the quality of the data inputs, including spatio-temporal resolution, but the extent is still an area of active research. Here, we evaluate differences between forecast performance and computational requirements between daily and weekly COVID-19 incidence data from the nine provinces of South Africa as forecasting inputs. We use the EpiNow2 R package as the core forecasting engine in an analysis pipeline that simulates in situ realtime forecasting with varying data streams.  We evaluate generated forecasts against realized outcomes using the continuous ranked probability score (CRPS) and Effective Sample Size per second as measures of forecast performance and computational efficiency respectively. We find consistent trends in forecast performance (CRPS) and computational efficiency (ESS per second) across time, location, and forecast target resolution. Although both data inputs produced comparable forecast performance, the lower resolution weekly data inputs had lower computational efficiency. We describe a workflow for achieving comparable fits to data between daily and weekly data that can be applicable to similar forecasting problems. The extent to which these tradeoffs matter is context-specific, and varies depending on the public health question at hand. Therefore, the overall analytical costs, including collecting higher temporal resolution data and supplying greater computational resources, need to be weighed against the benefits of improved decision-making outcomes, like more prompt interventions and fewer false alarms. This analysis provides useful evidence towards establishing benchmark analyses for that kind of valuation of forecasting activities.
+  Infectious disease forecasting is useful for public health decision-making, including resource allocation and the timing of outbreak response interventions. Forecast quality is impacted by the quality of the data inputs, including spatio-temporal resolution, but the extent is still an area of active research. Here, we evaluate differences between forecast performance and computational requirements between daily and weekly COVID-19 incidence data from the nine provinces of South Africa as forecasting inputs. We use the EpiNow2 R package as the core forecasting engine in an analysis pipeline that simulates in situ realtime forecasting with varying data streams.  We evaluate generated forecasts against realized outcomes using the continuous ranked probability score (CRPS) and Effective Sample Size per second as measures of forecast performance and computational efficiency respectively. We find consistent trends in forecast performance (CRPS) across time, location, and forecast target resolution, while computational efficiency (ESS per second) was less consistent across location. Weekly data inputs produced modestly but consistently worse forecast performance than daily inputs, and required more frequent adaptive model refitting to reach reliable convergence, rather than uniformly lower raw sampling efficiency. We describe a workflow for achieving comparable fits to data between daily and weekly data that can be applicable to similar forecasting problems. The extent to which these tradeoffs matter is context-specific, and varies depending on the public health question at hand. Therefore, the overall analytical costs, including collecting higher temporal resolution data and supplying greater computational resources, need to be weighed against the benefits of improved decision-making outcomes, like more prompt interventions and fewer false alarms. This analysis provides useful evidence towards establishing benchmark analyses for that kind of valuation of forecasting activities.
 author-summary: |
-  Epidemic forecasters must often decide whether to use detailed daily case reports or coarser weekly totals as model inputs. Daily data are considered the gold standard, but they are costlier to collect and process. We systematically compared forecasts of COVID-19 cases across nine South African provinces using the EpiNow2 modelling framework with daily, weekly, and rescaled weekly data inputs. We evaluated both forecast accuracy (using the Continuous Ranked Probability Score) and computational efficiency (using effective sample size per second and adaptive refit counts). Our results show that daily and weekly data inputs produced comparable forecast performance, but the weekly data required more computational effort to achieve reliable model convergence. The rescaled weekly approach, which compressed weeks into pseudo-days, achieved high sampling efficiency but substantially worse predictive accuracy. These findings provide practical guidance for balancing data collection costs against forecast quality and computational resources, and offer a workflow for achieving comparable fits across temporal resolutions that can be adapted to other forecasting problems.
+  Epidemic forecasters must often decide whether to use detailed daily case reports or coarser weekly totals as model inputs. Daily data are considered the gold standard, but they are costlier to collect and process. We systematically compared forecasts of COVID-19 cases across nine South African provinces using the EpiNow2 modelling framework with daily, weekly, and rescaled weekly data inputs. We evaluated both forecast accuracy (using the Continuous Ranked Probability Score) and computational efficiency (using effective sample size per second and adaptive refit counts). Our results show that daily and weekly data inputs produced broadly similar, though not identical, forecast performance --- weekly inputs were modestly but consistently less accurate --- and that the weekly data needed more frequent adaptive model refitting to achieve reliable convergence, even though its typical sampling speed was not consistently lower than daily's. The rescaled weekly approach, which compressed weeks into pseudo-days, achieved high sampling efficiency but substantially worse predictive accuracy. These findings provide practical guidance for balancing data collection costs against forecast quality and computational resources, and offer a workflow for achieving comparable fits across temporal resolutions that can be adapted to other forecasting problems.
 bibliography: bibliography.bib
 ---
 
@@ -457,48 +457,61 @@ centre.
 # Discussion
 
 This study highlights the trade-offs of temporal aggregation in epidemiological
-forecasting. Daily data offer greater accuracy for short-term predictions,
-albeit at higher computational costs and diagnostic instability. Weekly data
-provide computational efficiency and smoother trends but sacrifice granularity
-and responsiveness to rapid changes in case dynamics. Though we did not
+forecasting. Daily data offer greater accuracy for short-term predictions.
+Weekly data achieve a similar typical sampling speed to daily data, but
+converge less reliably --- needing an adaptive refit more often --- and
+sacrifice granularity and responsiveness to rapid changes in case dynamics.
+Though we did not
 explicitly investigate this element, it stands to reason that the underlying
 surveillance system to support higher frequency reporting would also entail
 additional cost (e.g. more required storage space, more bandwidth to support
 more frequent access).
 
 Our central finding on forecast performance is that daily and weekly data inputs
-yield comparable CRPS when forecasts are evaluated at the same temporal
-resolution. When evaluated against weekly observations, the weekly-trained model
-matches or slightly outperforms the daily-trained model (geometric mean CRPS
-ratio near 1×), and even when evaluated against daily observations the
-weekly-trained model is only 1.5--3 times worse. In contrast, the rescaled
-weekly approach produces CRPS 30--60 times larger than the daily-trained
-baseline. This pronounced degradation likely arises because compressing weekly
-intervals into pseudo-daily steps distorts the temporal dynamics that EpiNow2's
-renewal equation is designed to capture: generation times, incubation periods,
-and reporting delays are all divided by seven, fundamentally altering the
-relationship between latent infections and observed cases. By contrast,
-retaining the daily latent scale and treating the unreported days as missing ---
-so that the model explicitly accumulates reports across the days within each
-week --- preserves these epidemiological relationships, and explains why the
-standard weekly approach remains competitive with daily forecasting.
+yield CRPS of a similar order of magnitude, though not identical, when
+forecasts are evaluated at the same temporal resolution. When evaluated
+against weekly observations, the weekly-trained model produces CRPS 1.2--1.7
+times higher than the daily-trained model (median 1.4×) --- consistently
+somewhat worse, rather than comparable --- and when evaluated against daily
+observations the weekly-trained model is 1.3--1.9 times worse. In contrast,
+the rescaled weekly approach produces CRPS 61--97 times larger than the
+daily-trained baseline. This pronounced degradation likely arises because
+compressing weekly intervals into pseudo-daily steps distorts the temporal
+dynamics that EpiNow2's renewal equation is designed to capture: generation
+times, incubation periods, and reporting delays are all divided by seven,
+fundamentally altering the relationship between latent infections and
+observed cases. By contrast, retaining the daily latent scale and treating
+the unreported days as missing --- so that the model explicitly accumulates
+reports across the days within each week --- preserves these epidemiological
+relationships, and explains why the standard weekly approach remains broadly
+competitive with daily forecasting --- modestly worse, rather than
+equivalent --- in contrast to the substantially degraded rescaled approach.
 
-The computational requirements of the three approaches present a striking
-counterpoint to their predictive performance. The weekly model, despite
-producing forecast accuracy comparable to the daily model, required
-substantially more computational effort: it consistently needed the most
-adaptive refits (typically 5--12 ratchets per slide versus 0--2 for the daily
-model) and exhibited the lowest sampling efficiency (approximately 0.01--0.1
-tail ESS per second, compared with 0.1--0.3 for daily). This additional
-computational burden reflects the challenge of fitting a model designed for
-daily latent dynamics to data observed only once per week, where the posterior
-geometry becomes more complex due to the implicit marginalisation over
-unobserved daily counts. Conversely, the rescaled weekly model achieved the
-highest sampling efficiency (1--10 tail ESS per second) because its compressed
-time axis reduced the effective number of latent time steps, simplifying the
-posterior. However, this computational efficiency came at the cost of
-dramatically worse predictive performance, demonstrating that sampling
-efficiency and forecast quality are not interchangeable objectives.
+The computational requirements of the three approaches present a more nuanced
+picture than their predictive performance alone would suggest. The weekly
+model, despite producing forecast accuracy only modestly worse than the daily
+model, converged less reliably: it required at least one adaptive refit in
+around one-fifth of forecast windows (up to 11 in the most difficult cases),
+compared with under 6% of windows for both the daily and rescaled weekly
+models. This was not, however, accompanied by consistently lower steady-state
+sampling efficiency --- tail ESS per second for the weekly and daily models
+overlapped substantially across provinces, with weekly showing a higher
+median than daily in six of the ten locations. Weekly's additional
+computational burden therefore shows up as wider variability and a heavier
+tail of slow, hard-to-converge fits, rather than as a uniformly slower
+sampler. This pattern is consistent with the challenge of fitting a model
+designed for daily latent dynamics to data observed only once per week: most
+weeks the posterior geometry is unremarkable, but the implicit
+marginalisation over unobserved daily counts occasionally produces a
+substantially harder fit. Conversely, the rescaled weekly model achieved the
+highest sampling efficiency by a wide margin (typically 400--5000 tail ESS
+per second) because its compressed time axis greatly reduced the effective
+number of latent time steps, simplifying the posterior. However, this
+computational efficiency came at the cost of dramatically worse predictive
+performance, demonstrating that sampling efficiency and forecast quality are
+not interchangeable objectives --- and that, for the weekly model, the
+practical computational cost is better captured by how often refitting is
+needed than by typical sampling speed.
 
 These results have two stakeholders. To the users of EpiNow2, it addressed
 questions of how EpiNow2 performs under degrading data resolution conditions and
@@ -557,16 +570,20 @@ be valuable.
 For practitioners deciding between daily and weekly data inputs, we recommend
 the following workflow. First, if daily data are available and computational
 resources permit, daily-resolution forecasting with EpiNow2 provides the best
-combination of forecast accuracy and sampling efficiency. Second, when only
-weekly data are available --- or when daily collection and processing costs are
+combination of forecast accuracy and reliable convergence, needing an
+adaptive refit in under 4% of forecast windows. Second, when only weekly data
+are available --- or when daily collection and processing costs are
 prohibitive --- the standard weekly approach, in which the latent process is
 retained on a daily scale and the unreported days are modelled as missing and
-accumulated, can achieve comparable forecast accuracy, provided that sufficient
-computational budget is allocated for adaptive tuning; practitioners should
-expect approximately 5--12 adaptive refits per forecast window and should
-monitor convergence using the diagnostic thresholds described in this study
-(divergences below 0.25% of total draws, $\hat{R}$ below 1.01, and bulk ESS
-above 400). Third, the rescaled weekly approach, while computationally
+accumulated, can achieve forecast accuracy within a similar order of
+magnitude of the daily approach, provided that sufficient computational
+budget is allocated for adaptive tuning; practitioners should expect most
+forecast windows to converge without any adaptive refit, but should budget
+for the possibility of several refits (up to around 11 in the most difficult
+windows) in roughly one in five windows, and should monitor convergence using
+the diagnostic thresholds described in this study (divergences below 0.25% of
+total draws, $\hat{R}$ below 1.01, and bulk ESS above 400). Third, the
+rescaled weekly approach, while computationally
 efficient, should be avoided for operational forecasting given its substantially
 degraded predictive performance. More broadly, we recommend that forecast
 evaluation routinely combine proper scoring rules with computational
