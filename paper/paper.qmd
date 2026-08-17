@@ -384,24 +384,28 @@ estimates.
 
 We present province-level results using the Eastern Cape (EC) as a
 representative example; equivalent figures for all other provinces are provided
-in the Supplementary Materials. The patterns described below were consistent
-across all nine provinces and the national aggregate (RSA).
+in the Supplementary Materials. The relative ranking of forecast accuracy was
+consistent across all nine provinces and the national aggregate (RSA); the
+computational diagnostics were only partly consistent, as detailed below.
 
 ## Forecast performance
 
 @fig-panel-scores-EC shows the CRPS time series for the EC alongside the
 observed daily and weekly incidence. On a log scale, CRPS tracks the incidence
 level closely: scores rise by one to two orders of magnitude during epidemic
-wave peaks and fall during inter-wave troughs, reflecting the larger absolute
-errors inherent to higher case counts. When evaluated against daily
-observations, forecasts trained on daily and weekly data produce comparable CRPS
-values, with the daily-trained model performing slightly better during periods
+wave peaks and fall during inter-wave troughs --- up to three orders of
+magnitude during the largest wave (December 2021--January 2022) --- reflecting
+the larger absolute errors inherent to higher case counts. When evaluated
+against daily observations, forecasts trained on daily data produce lower CRPS
+than those trained on weekly data on the majority of dates (around 70% across
+provinces), though this advantage is not consistently concentrated in periods
 of rapidly changing incidence. When evaluated against weekly observations, the
-daily-trained and weekly-trained forecasts again show similar accuracy. In
-contrast, the rescaled weekly forecasts exhibit substantially worse CRPS ---
-approximately one to two orders of magnitude higher than the other two
-approaches --- across both evaluation resolutions, indicating that the
-time-compression strategy degrades predictive performance.
+weekly-trained forecasts remain modestly but consistently worse than the
+daily-trained forecasts, rather than comparable. In contrast, the rescaled
+weekly forecasts exhibit substantially worse CRPS --- approximately one to two
+orders of magnitude higher than the other two approaches --- across both
+evaluation resolutions, indicating that the time-compression strategy degrades
+predictive performance.
 
 ![Forecast performance for the Eastern Cape province (EC). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly). Equivalent plots for all other provinces are provided in the Supplementary Materials.](../local/figures/fig_panel_scores_EC.png){#fig-panel-scores-EC}
 
@@ -409,17 +413,23 @@ time-compression strategy degrades predictive performance.
 
 @fig-panel-diagnostics-EC displays the tail ESS per second and the number of
 adaptive ratchets for the EC. The rescaled weekly model achieves the highest
-sampling efficiency, with tail ESS per second typically in the range of 1--10,
-reflecting the smaller effective dataset size in the compressed time
-representation. The daily model yields intermediate efficiency at approximately
-0.1--0.3 ESS per second, while the weekly model has the lowest efficiency at
-roughly 0.01--0.1 ESS per second. The ratchet counts mirror this pattern in
-reverse: the weekly model consistently requires the most adaptive refits,
-typically 5--12 per slide, indicating that convergence is most difficult for the
-weekly data configuration. The daily model requires the fewest ratchets, usually
-0--2 per slide, while the rescaled weekly model falls in between with variable
-ratchet counts. These patterns were consistent across all nine provinces and the
-national aggregate.
+sampling efficiency, with tail ESS per second typically in the range of
+400--5000 (interquartile range 2700--4100), reflecting the smaller effective
+dataset size in the compressed time representation. The daily and weekly
+models show broadly similar efficiency --- daily typically 40--270 ESS per
+second (interquartile range 98--180), weekly typically 15--380 (interquartile
+range 57--210) --- with weekly showing wider variability, including occasional
+excursions below 5, rather than a consistently lower level. The ratchet counts
+show a different pattern: for every configuration, the majority of slides
+converge without any adaptive refit. The weekly model required at least one
+refit in around one-fifth of slides (up to 11 in the most difficult cases),
+compared with under 6% of slides for both the daily and rescaled weekly models
+(maximum 1 and 11 refits respectively). Refitting is therefore a tail
+phenomenon rather than a routine cost, though the weekly model is
+disproportionately represented in that tail. The ratchet-frequency ordering
+(weekly highest) held in all nine provinces and the national aggregate, but
+the daily-versus-weekly ESS-per-second ordering did not: weekly had higher
+median efficiency than daily in six of the ten locations.
 
 ![Computational diagnostics for the Eastern Cape province (EC). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide. Equivalent results for all other provinces are available in the Supplementary Materials.](../local/figures/fig_panel_diagnostics_EC.png){#fig-panel-diagnostics-EC}
 
@@ -427,19 +437,20 @@ national aggregate.
 
 @fig-crps-all-provs-summarised compares the geometric mean CRPS ratio relative
 to the daily-trained baseline across all provinces. When evaluated against daily
-observations, the weekly-trained model produces CRPS approximately 1.5--3 times
-higher than the daily-trained baseline, with the majority of provinces clustered
-between 1.5× and 2.5×. When evaluated against weekly observations, the
-weekly-trained model achieves CRPS ratios close to or slightly below 1,
-indicating comparable or marginally better performance than the daily-trained
-model at the weekly resolution. The rescaled weekly model performs markedly
-worse, with CRPS ratios of approximately 30--60 times higher than the
-daily-trained baseline when both are evaluated against weekly observations.
-Province-to-province variability within each comparison scenario is small
-relative to the differences between scenarios, indicating that the relative
-performance of each approach is robust across locations. The national aggregate
-(RSA) falls near the centre of the provincial distribution in all three
-scenarios.
+observations, the weekly-trained model produces CRPS approximately 1.3--1.9
+times higher than the daily-trained baseline (median 1.5×) across provinces.
+When evaluated against weekly observations, the weekly-trained model produces
+CRPS approximately 1.2--1.7 times higher than the daily-trained baseline
+(median 1.4×) --- consistently worse rather than comparable, though the gap
+narrows relative to the daily-observation comparison. The rescaled weekly
+model performs markedly worse, with CRPS ratios of approximately 61--97 times
+higher (median 79×) than the daily-trained baseline when both are evaluated
+against weekly observations. Province-to-province variability within each
+comparison scenario is small relative to the differences between scenarios,
+indicating that the relative performance of each approach is robust across
+locations. The national aggregate (RSA) falls at the upper, worst-performing
+end of the provincial distribution in all three scenarios, rather than the
+centre.
 
 ![Relative forecast performance across all nine South African provinces and the national total (RSA). The plot shows the geometric mean of the Continuous Ranked Probability Score (CRPS) relative to the baseline model trained on daily data. Comparisons are shown for three scenarios: weekly aggregated training data tested against daily observations, rescaled weekly training tested against weekly observations, and weekly aggregated training tested against weekly observations. Values above the dashed line ($y=1$) indicate worse performance than the daily-trained baseline, while values below indicate better performance. Provinces are ordered by population size and colour-coded, with the national total (RSA) included for comparison.](../local/figures/fig_crps_summary_all_provs.png){#fig-crps-all-provs-summarised}
 
