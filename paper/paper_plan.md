@@ -16,22 +16,30 @@ and that element vanished from the `c()`. `passingmcmc` was therefore a
 bulk ESS passed. Post-fix it is a three-element vector stopping on **any two of
 three**.
 
-Every artefact in `local/output/` is dated 25 Sep 2025 and so predates this fix.
-Bulk ESS >= 400 is the criterion the weekly model struggles with — which is why
-it ratchets most — and a fit passing divergences and $\hat{R}$ but failing ESS
-now stops where it previously kept refitting. Expected consequences:
+Every artefact in `local/output/` was dated 25 Sep 2025 and so predated this
+fix, until it was fully regenerated on 2026-08-17 (see section D). Bulk ESS >=
+400 was the criterion the weekly model struggled with — which is why it
+ratcheted most — and a fit passing divergences and $\hat{R}$ but failing ESS
+now stops where it previously kept refitting. This section originally listed
+expected consequences before the rerun; each is resolved below against the
+actual post-fix numbers:
 
-- weekly ratchet counts should **fall substantially**
-- mean terminal `adapt_delta` should fall, shortening run times
-- ESS/sec moves both ways at once (shorter runtimes raise it; accepting
-  lower-ESS fits lowers the numerator) — **direction genuinely unknown**
+- weekly ratchet counts should **fall substantially** — confirmed, and further
+  than expected: median ratchets is now 0 for *every* configuration, not just
+  weekly (see D2).
+- mean terminal `adapt_delta` should fall, shortening run times — confirmed;
+  this is why ESS/sec rose by ~2-3 orders of magnitude across the board (D1).
+- ESS/sec moves both ways at once, **direction genuinely unknown** — resolved:
+  it rose for all three configurations, but the daily-vs-weekly *ordering*
+  stopped being consistent across provinces (D1, D6).
 - forecast draws shift via the `adapt_delta` path, so CRPS changes modestly
-  rather than qualitatively
+  rather than qualitatively — confirmed; CRPS ratios moved but stayed in a
+  similar range (D3), except the weekly-vs-daily-at-weekly-resolution
+  comparison flipped from "~1x" to "consistently >1x" (D3).
 
-One knock-on to watch: the paper currently evidences "weekly is computationally
-hardest" through ratchet counts. Post-fix that burden may relocate into *lower
-achieved ESS* instead. The claim will probably survive; the quantity
-demonstrating it may not.
+The anticipated knock-on **did** materialise: "weekly is computationally
+hardest" no longer holds through ESS/sec (D1, D6) and now rests almost
+entirely on refit *frequency* being higher, not on refits being typical (D2).
 
 ## A. Applied
 
@@ -68,23 +76,48 @@ Verified as correct and needing **no** change: "initial step size of $0.1$"
 (`paper.qmd:260`) matches `control_opts$stepsize`; the bulk ESS >= 400 threshold
 (`paper.qmd:281-282`) now matches `essmin = 400` after merging `8175fe0`.
 
-## D. Blocked on pipeline regeneration
+## D. Pipeline regenerated — proposed Results/Discussion rewrite (unblocked)
 
-Do not finalise these until `local/output/` is rebuilt. Every entry is a
-hardcoded range or a directional claim resting on one.
+`local/output/` was rebuilt in full on 2026-08-17 (all 10 provinces × 5 output
+types, verified by file timestamp), well after `b5848ef` landed, so the block
+below no longer applies: every quantity is now recomputed from post-fix
+output. Figures were regenerated and committed at `e2441b4`. Numbers below
+were computed directly from `local/output/diagnostics_*.csv`,
+`local/output/forecast_*.rds` (`$timing`), and `local/output/score_*.rds`
+across all 10 provinces, and cross-checked against `fig_panel_scores_EC.png`,
+`fig_panel_diagnostics_EC.png`, and `fig_crps_summary_all_provs.png`.
 
-Line numbers below are current as of `89a58a7`.
+Line numbers below are current as of `1eaa248`.
 
-| # | Location | Change | Exposure | Commit |
-|---|---|---|---|---|
-| D1 | `411`, `414-415`, `479-480`, `485` | ESS/sec bands (1--10 rescaled, 0.1--0.3 daily, 0.01--0.1 weekly) | High — numerator and denominator both move | |
-| D2 | `415-419`, `478`, `553` | Ratchet counts (5--12 weekly, 0--2 daily) | **Highest** — `b5848ef` rewrites this loop directly | |
-| D3 | `429-435`, `462-463` | CRPS ratios (1.5--3x, ~1x, 30--60x) | Moderate — ordering likely holds, bounds may not | |
-| D4 | `393`, `401` | "one to two orders of magnitude" | Moderate | |
-| D5 | `397` | Daily "slightly better during periods of rapidly changing incidence" | Moderate — fine-grained comparison | |
-| D6 | `384-388`, `420`, `438-440` | "consistent across all nine provinces and RSA" robustness claims | Needs re-verification province by province | |
-| D7 | `57`, `59` | Abstract and author summary directional claims | Low — likely hold, but confirm rather than assume | |
-| D8 | `476-489` | Discussion paragraph 3 restates D1 and D2 throughout | Follows D1, D2 | |
+**Three of these are narrative reversals, not just tighter bounds** — flagged
+below with ⚠. They change what the paper argues, not just the numbers it
+cites, so none of D1–D8 has been applied to `paper.qmd` yet pending review:
+
+- ⚠ **Ratchets are now rare, not typical.** Median refits is 0 for every
+  configuration. Only a tail of slides refit at all: daily in 3.7% of slides
+  (max 1), rescaled weekly in 5.4% (max 11), weekly in 20.4% (max 11). "Weekly
+  typically needs 5–12 ratchets per slide" no longer holds for any province.
+- ⚠ **Daily vs. weekly ESS/sec ordering no longer holds consistently.** Weekly
+  has *higher* median ESS/sec than daily in 6/10 provinces (EC, FS, GP, KZN,
+  WC, RSA) and lower in the other 4. Both are now similar order of magnitude
+  (tens–hundreds/sec) and overlap. Rescaled weekly remains unambiguously
+  highest in every province.
+- ⚠ **Weekly-trained forecasts evaluated at weekly resolution are no longer
+  "comparable to or better than" daily.** All 10 provinces now show geometric
+  mean CRPS ratio > 1 (range 1.23×–1.70×, median 1.41×) — consistently worse,
+  not "near 1×."
+
+| # | Location | Current text says | Proposed replacement | Exposure | Commit |
+|---|---|---|---|---|---|
+| D1 | `411-420` | ESS/sec bands (1--10 rescaled, 0.1--0.3 daily, 0.01--0.1 weekly, weekly lowest) | "The rescaled weekly model achieves the highest sampling efficiency, with tail ESS per second typically in the range of 400–5000 (interquartile range 2700–4100)... The daily and weekly models show broadly similar efficiency — daily typically 40–270 ESS per second (IQR 98–180), weekly typically 15–380 (IQR 57–210) — with weekly showing wider variability, including occasional excursions below 5, rather than a consistently lower level." | High ⚠ narrative reversal | `901a369` |
+| D2 | `415-419` | Ratchet counts (5--12 weekly, 0--2 daily, rescale "in between") | "For every configuration, the majority of slides converge without any adaptive refit. Weekly required at least one refit in around one-fifth of slides (up to 11 in the most difficult cases), compared with under 6% of slides for both daily and rescaled weekly (maximum 1 and 11 respectively). Refitting is therefore a tail phenomenon rather than a routine cost, though weekly is disproportionately represented in that tail." | **Highest** ⚠ narrative reversal | `901a369` |
+| D3 | `429-437` | CRPS ratios (1.5--3x, ~1x, 30--60x) | "weekly-trained model produces CRPS 1.3–1.9 times higher than the daily-trained baseline (median 1.5×)" @ daily eval; "1.2–1.7 times higher (median 1.4×) — consistently worse rather than comparable" @ weekly eval; "rescaled weekly... approximately 61–97 times higher (median 79×)" @ weekly eval | Moderate ⚠ narrative reversal (weekly-at-weekly case) | `901a369` |
+| D4 | `393-394` | "one to two orders of magnitude" | Confirmed against `fig_panel_scores_EC.png`; append "— up to three orders of magnitude during the largest wave (December 2021–January 2022)" | Low — mostly holds | `901a369` |
+| D5 | `397-399` | Daily "slightly better during periods of rapidly changing incidence" | "forecasts trained on daily data produce lower CRPS than those trained on weekly data on the majority of dates (around 70% across provinces), though this advantage is not consistently concentrated in periods of rapidly changing incidence" (effect confirmed but not concentrated as claimed: larger during rapid change in 6/10 provinces, smaller in 4/10) | Moderate — softened, not reversed | `901a369` |
+| D6 | `384-388`, `420-422`, `438-440` | "consistent across all nine provinces and RSA" (blanket) | Split: forecast-accuracy ranking is consistent across all 10 (confirmed via `fig_crps_summary_all_provs.png`, kept as-is at 438-440); ratchet-frequency ordering (weekly highest) held in all 10; **ESS/sec ordering between daily and weekly did not order consistently** (see D1) — reworded at 420-422 accordingly | High ⚠ split finding | `901a369` |
+| D9 | `440-442` | "RSA falls near the centre of the provincial distribution in all three scenarios" | Same recomputation used for D3 shows RSA is the maximum (worst-performing) province in all three CRPS scenarios, not central. Reworded to "falls at the upper, worst-performing end ... rather than the centre." Found and fixed alongside D3/D6 since it draws on the same table. | Low — factual correction, no reversal | `901a369` |
+| D7 | `57`, `59` | Abstract/author-summary: "comparable forecast performance," weekly "lower computational efficiency" | Soften "comparable" (weekly is modestly but consistently worse, not comparable) and replace "lower computational efficiency" with refit-frequency framing, since raw ESS/sec no longer orders consistently (see D1/D2). Exact wording not yet drafted — depends on how D1/D2/D8 land. | Low exposure, high visibility (abstract) | |
+| D8 | `486-501` (Discussion para 3), `557-575` (recommendations, esp. `566` "expect approximately 5--12 adaptive refits") — refreshed after `901a369` | Restates D1 and D2's old "striking counterpoint" framing throughout | Full rewrite, now that D1/D2 wording is applied at `901a369`. New mechanism story: weekly's steady-state sampling efficiency is not distinguishable from daily's, but it fails to converge cleanly (needs a refit) more often — a materially different claim from "consistently worst efficiency + most ratchets." Also fix the `566` recommendation, which is now inaccurate. | Follows D1, D2 (applied) | |
 
 ## E. Safe to write out now (no pipeline dependency)
 

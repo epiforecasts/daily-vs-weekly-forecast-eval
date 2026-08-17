@@ -117,6 +117,54 @@ before trusting the label.
 describing what each function does, per the manuscript writing style now
 recorded in `CLAUDE.md`. Package names are still cited.
 
+## Pipeline regeneration and Results rewrite (Aug 2026)
+
+| Commit | Date | Change |
+|---|---|---|
+| `901a369` | 2026-08-17 | Updated Results (Forecast performance, Computational diagnostics, Relative performance) to match `local/output/` regenerated post-`b5848ef`; see below |
+
+`local/output/` was rebuilt in full on 2026-08-17 — all 10 provinces × 5
+output types — the first full regeneration since the `keep_running()`
+rhat/max_rhat fix (`b5848ef`, 2026-04-11). This unblocked the eight items
+tracked in `paper_plan.md` section D. `901a369` applied the six
+(D1–D6) that were mechanical or well-supported by the fresh numbers, plus one
+adjacent factual correction found while recomputing the same table (D9: RSA is
+the worst-performing province in all three CRPS scenarios, not central, as the
+old text claimed):
+
+- **ESS/sec bands** (D1) rose roughly 2–3 orders of magnitude across every
+  configuration (faster fits post-fix). Daily and weekly are now similar
+  order of magnitude and overlap, rather than weekly being clearly lowest —
+  weekly actually has *higher* median ESS/sec than daily in 6 of 10
+  provinces.
+- **Ratchet counts** (D2) dropped from "typically 5–12 per slide for weekly"
+  to a tail phenomenon: median is 0 refits for every configuration, with
+  weekly needing at least one refit in ~20% of slides (daily and rescaled
+  weekly both under 6%).
+- **CRPS ratios** (D3) recomputed from fresh scores. The weekly-trained model
+  evaluated at weekly resolution is now consistently >1× (1.2–1.7×, median
+  1.4×) across all 10 provinces, rather than "close to or below 1×" as
+  previously claimed.
+- **Order-of-magnitude claim** (D4) confirmed against `fig_panel_scores_EC.png`,
+  with the largest wave (Dec 2021–Jan 2022) noted as reaching three orders of
+  magnitude rather than the general one-to-two.
+- **"Daily slightly better during rapid change"** (D5) softened: daily is
+  modestly better on ~70% of dates across provinces, but the margin is not
+  consistently larger during rapid-change periods (larger in 6/10 provinces,
+  smaller in 4/10).
+- **Cross-province consistency** (D6) split into what held (CRPS ranking,
+  ratchet-frequency ordering) and what didn't (daily-vs-weekly ESS/sec
+  ordering, which flips in 4/10 provinces).
+
+D7 (abstract/author-summary) and D8 (Discussion paragraph 3 and the
+practitioner recommendations, including the now-inaccurate "expect 5–12
+adaptive refits") are **not yet applied** — both require reframing the
+"striking counterpoint" narrative rather than swapping numbers, and are still
+open in `paper_plan.md` section D.
+
+Full before/after numbers and the reasoning for each item are in
+`paper_plan.md` section D.
+
 ## Resolved elsewhere
 
 ### `rhat` vs `max_rhat` column mismatch
