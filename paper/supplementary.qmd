@@ -61,72 +61,52 @@ This document provides provincial-level results for all provinces and the nation
 
 ![Forecast performance for the Free State province (FS). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_FS.png){#fig-panel-scores-FS}
 
-## Gauteng (GP)
-
-![Forecast performance for the Gauteng province (GP). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_GP.png){#fig-panel-scores-GP}
-
-## KwaZulu-Natal (KZN)
-
-![Forecast performance for the KwaZulu-Natal province (KZN). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_KZN.png){#fig-panel-scores-KZN}
-
-## Limpopo (LP)
-
-![Forecast performance for the Limpopo province (LP). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_LP.png){#fig-panel-scores-LP}
-
-## Mpumalanga (MP)
-
-![Forecast performance for the Mpumalanga province (MP). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_MP.png){#fig-panel-scores-MP}
-
-## Northern Cape (NC)
-
-![Forecast performance for the Northern Cape province (NC). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_NC.png){#fig-panel-scores-NC}
-
-## North West (NW)
-
-![Forecast performance for the North West province (NW). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_NW.png){#fig-panel-scores-NW}
-
-## South Africa national aggregate (RSA)
-
-![Forecast performance for the national aggregate (RSA). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_RSA.png){#fig-panel-scores-RSA}
-
-## Western Cape (WC)
-
-![Forecast performance for the Western Cape province (WC). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_WC.png){#fig-panel-scores-WC}
-
-# Computational diagnostics
-
-## Free State (FS)
-
 ![Computational diagnostics for the Free State province (FS). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_FS.png){#fig-panel-diagnostics-FS}
 
 ## Gauteng (GP)
+
+![Forecast performance for the Gauteng province (GP). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_GP.png){#fig-panel-scores-GP}
 
 ![Computational diagnostics for the Gauteng province (GP). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_GP.png){#fig-panel-diagnostics-GP}
 
 ## KwaZulu-Natal (KZN)
 
+![Forecast performance for the KwaZulu-Natal province (KZN). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_KZN.png){#fig-panel-scores-KZN}
+
 ![Computational diagnostics for the KwaZulu-Natal province (KZN). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_KZN.png){#fig-panel-diagnostics-KZN}
 
 ## Limpopo (LP)
+
+![Forecast performance for the Limpopo province (LP). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_LP.png){#fig-panel-scores-LP}
 
 ![Computational diagnostics for the Limpopo province (LP). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_LP.png){#fig-panel-diagnostics-LP}
 
 ## Mpumalanga (MP)
 
+![Forecast performance for the Mpumalanga province (MP). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_MP.png){#fig-panel-scores-MP}
+
 ![Computational diagnostics for the Mpumalanga province (MP). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_MP.png){#fig-panel-diagnostics-MP}
 
 ## Northern Cape (NC)
+
+![Forecast performance for the Northern Cape province (NC). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_NC.png){#fig-panel-scores-NC}
 
 ![Computational diagnostics for the Northern Cape province (NC). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_NC.png){#fig-panel-diagnostics-NC}
 
 ## North West (NW)
 
+![Forecast performance for the North West province (NW). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_NW.png){#fig-panel-scores-NW}
+
 ![Computational diagnostics for the North West province (NW). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_NW.png){#fig-panel-diagnostics-NW}
-
-## South Africa national aggregate (RSA)
-
-![Computational diagnostics for the national aggregate (RSA). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_RSA.png){#fig-panel-diagnostics-RSA}
 
 ## Western Cape (WC)
 
+![Forecast performance for the Western Cape province (WC). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_WC.png){#fig-panel-scores-WC}
+
 ![Computational diagnostics for the Western Cape province (WC). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_WC.png){#fig-panel-diagnostics-WC}
+
+## South Africa national aggregate (RSA)
+
+![Forecast performance for the national aggregate (RSA). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly).](../local/figures/fig_panel_scores_RSA.png){#fig-panel-scores-RSA}
+
+![Computational diagnostics for the national aggregate (RSA). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide.](../local/figures/fig_panel_diagnostics_RSA.png){#fig-panel-diagnostics-RSA}
