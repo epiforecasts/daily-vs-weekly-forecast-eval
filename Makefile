@@ -153,20 +153,20 @@ PAPEROUT := ${PAPERDIR}/paper.pdf
 ${PAPEROUT}: ${PAPERSRC} ${PAPERDIR}/bibliography.bib
 	cd ${PAPERDIR} && quarto render paper.qmd
 
-paper: ${PAPEROUT}
+paper_main_text: ${PAPEROUT}
 
 # Supplementary materials rendering
 SUPPSRC := ${PAPERDIR}/supplementary.qmd
 SUPPOUT := ${PAPERDIR}/supplementary.pdf
 
-${SUPPOUT}: ${SUPPSRC} all_panel_figs
+${SUPPOUT}: ${SUPPSRC} all_scores_panel_figs all_diagnostics_panel_figs
 	cd ${PAPERDIR} && quarto render supplementary.qmd
 
 supplementary: ${SUPPOUT}
 
 # Combined paper + supplementary target
-manuscripts: paper supplementary
+paper_full: paper_main_text supplementary
 
-.PHONY: paper supplementary manuscripts
+.PHONY: paper_main_text supplementary paper_full
 
 endrule: all_figs
