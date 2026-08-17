@@ -156,11 +156,38 @@ old text claimed):
   ratchet-frequency ordering) and what didn't (daily-vs-weekly ESS/sec
   ordering, which flips in 4/10 provinces).
 
+| `5a25800` | 2026-08-17 | Reframed the abstract, author summary, and Discussion's computational narrative (D7, D8) to match D1-D3; see below |
+
 D7 (abstract/author-summary) and D8 (Discussion paragraph 3 and the
 practitioner recommendations, including the now-inaccurate "expect 5–12
-adaptive refits") are **not yet applied** — both require reframing the
-"striking counterpoint" narrative rather than swapping numbers, and are still
-open in `paper_plan.md` section D.
+adaptive refits") required reframing the "striking counterpoint" narrative
+rather than swapping numbers, since D1/D2 had already shown that "weekly is
+consistently worst on every computational axis" no longer held:
+
+- **Abstract/author summary** (D7): "comparable forecast performance"
+  replaced with "modestly but consistently worse"; "lower computational
+  efficiency" replaced with a refit-frequency framing, since raw ESS/sec no
+  longer orders consistently between daily and weekly.
+- **Discussion opening paragraph**: reframed, and in doing so fixed a
+  pre-existing internal contradiction unrelated to the pipeline rerun — it
+  had attributed "higher computational costs and diagnostic instability" to
+  *daily* data, backwards from every other claim in the paper, where weekly
+  is the harder-to-converge configuration.
+- **Central-finding paragraph**: synced to the Results section's updated CRPS
+  ratios (D3) instead of restating the old "near 1×" / "1.5–3×" / "30–60×"
+  figures.
+- **Computational paragraph** (the core of D8): replaced the "striking
+  counterpoint" framing (weekly = worst efficiency + most ratchets) with the
+  actual mechanism — weekly's steady-state sampling efficiency is
+  statistically indistinguishable from daily's (higher median than daily in
+  6/10 provinces), but it fails to converge cleanly in about 1 in 5 windows
+  versus under 6% for daily and rescaled weekly, so the real computational
+  cost is refit frequency, not typical sampling speed.
+- **Recommendations paragraph**: dropped the now-false "expect 5–12 adaptive
+  refits per forecast window"; replaced "best combination of accuracy and
+  sampling efficiency" for daily (misleading given rescaled weekly's far
+  higher raw ESS/sec) with "best combination of accuracy and reliable
+  convergence."
 
 Full before/after numbers and the reasoning for each item are in
 `paper_plan.md` section D.

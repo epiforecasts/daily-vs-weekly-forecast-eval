@@ -76,7 +76,7 @@ Verified as correct and needing **no** change: "initial step size of $0.1$"
 (`paper.qmd:260`) matches `control_opts$stepsize`; the bulk ESS >= 400 threshold
 (`paper.qmd:281-282`) now matches `essmin = 400` after merging `8175fe0`.
 
-## D. Pipeline regenerated — proposed Results/Discussion rewrite (unblocked)
+## D. Pipeline regenerated — Results/Discussion rewrite (applied)
 
 `local/output/` was rebuilt in full on 2026-08-17 (all 10 provinces × 5 output
 types, verified by file timestamp), well after `b5848ef` landed, so the block
@@ -87,11 +87,13 @@ were computed directly from `local/output/diagnostics_*.csv`,
 across all 10 provinces, and cross-checked against `fig_panel_scores_EC.png`,
 `fig_panel_diagnostics_EC.png`, and `fig_crps_summary_all_provs.png`.
 
-Line numbers below are current as of `1eaa248`.
+**All nine items (D1–D9) are now applied** — D1–D6 and D9 at `901a369`, D7–D8
+at `5a25800`. Location references below predate the edits; see
+`paper_changes.md` for the chronological summary of what changed.
 
-**Three of these are narrative reversals, not just tighter bounds** — flagged
-below with ⚠. They change what the paper argues, not just the numbers it
-cites, so none of D1–D8 has been applied to `paper.qmd` yet pending review:
+**Three of these were narrative reversals, not just tighter bounds** — flagged
+below with ⚠. They changed what the paper argues, not just the numbers it
+cites:
 
 - ⚠ **Ratchets are now rare, not typical.** Median refits is 0 for every
   configuration. Only a tail of slides refit at all: daily in 3.7% of slides
@@ -116,8 +118,8 @@ cites, so none of D1–D8 has been applied to `paper.qmd` yet pending review:
 | D5 | `397-399` | Daily "slightly better during periods of rapidly changing incidence" | "forecasts trained on daily data produce lower CRPS than those trained on weekly data on the majority of dates (around 70% across provinces), though this advantage is not consistently concentrated in periods of rapidly changing incidence" (effect confirmed but not concentrated as claimed: larger during rapid change in 6/10 provinces, smaller in 4/10) | Moderate — softened, not reversed | `901a369` |
 | D6 | `384-388`, `420-422`, `438-440` | "consistent across all nine provinces and RSA" (blanket) | Split: forecast-accuracy ranking is consistent across all 10 (confirmed via `fig_crps_summary_all_provs.png`, kept as-is at 438-440); ratchet-frequency ordering (weekly highest) held in all 10; **ESS/sec ordering between daily and weekly did not order consistently** (see D1) — reworded at 420-422 accordingly | High ⚠ split finding | `901a369` |
 | D9 | `440-442` | "RSA falls near the centre of the provincial distribution in all three scenarios" | Same recomputation used for D3 shows RSA is the maximum (worst-performing) province in all three CRPS scenarios, not central. Reworded to "falls at the upper, worst-performing end ... rather than the centre." Found and fixed alongside D3/D6 since it draws on the same table. | Low — factual correction, no reversal | `901a369` |
-| D7 | `57`, `59` | Abstract/author-summary: "comparable forecast performance," weekly "lower computational efficiency" | Soften "comparable" (weekly is modestly but consistently worse, not comparable) and replace "lower computational efficiency" with refit-frequency framing, since raw ESS/sec no longer orders consistently (see D1/D2). Exact wording not yet drafted — depends on how D1/D2/D8 land. | Low exposure, high visibility (abstract) | |
-| D8 | `486-501` (Discussion para 3), `557-575` (recommendations, esp. `566` "expect approximately 5--12 adaptive refits") — refreshed after `901a369` | Restates D1 and D2's old "striking counterpoint" framing throughout | Full rewrite, now that D1/D2 wording is applied at `901a369`. New mechanism story: weekly's steady-state sampling efficiency is not distinguishable from daily's, but it fails to converge cleanly (needs a refit) more often — a materially different claim from "consistently worst efficiency + most ratchets." Also fix the `566` recommendation, which is now inaccurate. | Follows D1, D2 (applied) | |
+| D7 | `57`, `59` | Abstract/author-summary: "comparable forecast performance," weekly "lower computational efficiency" | Applied: "comparable" replaced with "modestly but consistently worse"; "lower computational efficiency" replaced with refit-frequency framing ("required more frequent adaptive model refitting... rather than uniformly lower raw sampling efficiency") | Low exposure, high visibility (abstract) | `5a25800` |
+| D8 | Discussion opening paragraph, central-finding paragraph, computational paragraph, recommendations paragraph (all in `paper.qmd:457-583` as of `901a369`) | Restated D1/D2/D3's old numbers and the "striking counterpoint" framing throughout; opening paragraph also had a pre-existing, unrelated internal contradiction (attributed "higher computational costs and diagnostic instability" to *daily*, backwards from the rest of the paper) | Applied: computational paragraph reframed around the actual mechanism (weekly's steady-state ESS/sec is statistically indistinguishable from daily's; the real cost is refit frequency — ~1 in 5 windows vs <6% for daily/rescaled weekly); central-finding paragraph synced to D3's updated ratios; opening-paragraph contradiction fixed; recommendations paragraph drops the false "expect 5-12 adaptive refits" and softens "best combination of accuracy and sampling efficiency" for daily (misleading given rescaled weekly's far higher raw ESS/sec) to "best combination of accuracy and reliable convergence" | Follows D1, D2, D3 (all applied) | `5a25800` |
 
 ## E. Safe to write out now (no pipeline dependency)
 
