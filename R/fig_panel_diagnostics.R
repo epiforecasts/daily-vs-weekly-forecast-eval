@@ -11,15 +11,10 @@ library(patchwork)
                         "weekly_%s.rds"
                       )
             ), # cases
-            file.path("local", "output",
-                      c("forecast_daily_%s.rds",
-                        "forecast_weekly_%s.rds",
-                        "forecast_rescale_%s.rds",
-                        "diagnostics_%s.csv"
-                      )
-            ), # forecasts (also contains timing)
+            file.path("local", "output", "diagnostics_%s.csv"),
+            # diagnostics, slide dates and ratchets
             file.path("local", "figures", "fig_panel_diagnostics_%s.png")
-        ), # ratchets
+        ),
         .prov
     )
     c(.tmp[1:length(.tmp) - 1],
@@ -36,23 +31,11 @@ source(.args[length(.args) - 1])
 daily_cases <- readRDS(.args[1])
 weekly_cases <- readRDS(.args[2])
 
-# Forecasts
-forecasts_dt <- read_bulk_and_rbind(.args[3:5], "forecast")
+# Diagnostics, which also carry the slide dates and the adaptive refit counts
+diagnostics_dt <- fread(.args[3])
 
-# Get the slides and their dates for merging with the other data
-slide_dates_dictionary <- forecasts_dt[type == "weekly", .SD[1], by = "slide", .SDcols = c("date")]
-
-# Runtimes
-ratchets_dt <- read_bulk_and_rbind(.args[3:5], "timing")
-
-# Add dates
-ratchets_dt <- ratchets_dt[
-    slide_dates_dictionary,
-    on = "slide"
-]
-
-# Diagnostics
-diagnostics_dt <- fread(.args[6])
+# Ratchets
+ratchets_dt <- diagnostics_dt[, .(type, slide, date, ratchets)]
 
 #####
 #Plots
@@ -95,12 +78,6 @@ ratchets_plot <- ggplot(data = daily_cases) +
     labs(x = "Date", y = "ratchets", fill = "Forecast target")
 
 if (interactive()) print(ratchets_plot)
-
-# Add the dates by slide
-diagnostics_dt <- diagnostics_dt[
-    slide_dates_dictionary,
-    on = "slide"
-]
 
 # Reshape the ESS per sec columns into a single column for plotting
 diagnostics_dt_long <- melt(

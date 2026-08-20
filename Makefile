@@ -59,6 +59,11 @@ PROVINCES := GP WC EC KZN FS LP MP NC NW
 # Shared inputs
 SHARED_INPUTS = R/pipeline_shared_inputs.R
 
+# Post-processing helpers for the scoring figures and the manuscript summary.
+# Kept apart from SHARED_INPUTS, which the forecasting rules depend on, so that
+# changing them never marks the forecasts out of date.
+SUMMARY_UTILS = R/summary_utils.R
+
 # define all possible extracts
 $(foreach agg,daily weekly,$(foreach tar,${PROVINCES},$(eval EXTRACTS += ${DATDIR}/${agg}_${tar}.rds)))
 
@@ -97,9 +102,6 @@ ${FIGDIR}/fig_panel_diagnostics_%.png: \
 	R/fig_panel_diagnostics.R \
 	${DATDIR}/daily_%.rds \
 	${DATDIR}/weekly_%.rds \
-	${OUTDIR}/forecast_daily_%.rds \
-	${OUTDIR}/forecast_weekly_%.rds \
-	${OUTDIR}/forecast_rescale_%.rds \
 	${OUTDIR}/diagnostics_%.csv \
 	${SHARED_INPUTS} | ${FIGDIR}
 	$(call R)
@@ -107,8 +109,8 @@ ${FIGDIR}/fig_panel_diagnostics_%.png: \
 ${FIGDIR}/score_scatter_%.png: R/fig_crps.R ${OUTDIR}/score_%.rds | ${FIGDIR}
 	$(call R)
 
-${FIGDIR}/fig_crps_summary_all_provs.png: R/fig_crps_summary_all_provs.R $(patsubst %,${OUTDIR}/score_%.rds,${PROVINCES} RSA) | ${FIGDIR}
-	Rscript $< ${OUTDIR} $@
+${FIGDIR}/fig_crps_summary_all_provs.png: R/fig_crps_summary_all_provs.R $(patsubst %,${OUTDIR}/score_%.rds,${PROVINCES} RSA) ${SUMMARY_UTILS} | ${FIGDIR}
+	Rscript $< ${OUTDIR} ${SUMMARY_UTILS} $@
 
 # pattern = some province
 DAILYDAT_PAT = ${DATDIR}/daily_%.rds
