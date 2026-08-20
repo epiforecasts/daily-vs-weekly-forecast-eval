@@ -139,16 +139,82 @@ can be drafted or polished at any time.
 - Data and code availability (`371-381`), Acknowledgements, bibliography, and
   the pipeline schematic
 
-## F. Optional: parameterise the Results numbers
+## F. Parameterise the Results numbers — applied
 
-Rather than re-hunting ~16 hardcoded ranges after the rerun, the ranges at the
-D1-D4 lines could be replaced with inline R expressions reading
-`local/output/score_*.rds` and `local/output/diagnostics_*.csv` at render time.
-The Results prose would then re-derive itself from whatever the pipeline
-produces, and the risk of a stale number surviving into submission drops to
-zero. This couples `paper.qmd` to `local/`, which the figures already do, so it
-widens an existing dependency rather than adding a new one.
+Applied across `046ee6e`, `9b10ee8`, `bd02d74` and `de2faf7`. Line references
+in sections A–E predate these commits and are stale by roughly 17 lines from
+the setup chunk onwards; the current landmarks are Introduction `80`, Methods
+`161`, Results `400`, Discussion `488`.
+
+The D1–D9 round required hand-rewriting every numeric claim in the Results and
+then chasing the same numbers through the Discussion (D8) and the abstract
+(D7). Thirty-four references to twenty-one distinct recomputable values were
+involved, and every one of them moves when `local/output/` is regenerated.
+They are now computed once by the pipeline and referenced from the prose.
+
+### F.1 What is derived vs. what stays in the prose
+
+**Derived**, via `R/summarise_results.R` into `local/output/paper_summary.rds`:
+the CRPS ratio range and median for each of the three comparison scenarios; the
+CRPS log-scale spread; the share of dates the daily-trained forecast wins; the
+tail ESS per second typical range, interquartile range and minimum for each
+input type; the refit share and maximum refits for each input type; and the
+cross-province consistency counts.
+
+**Still written by hand** — design constants, which are pipeline *inputs* and
+cannot drift with a rerun: the convergence thresholds (`0.25%` divergences,
+$\hat{R}$ `1.01`, bulk ESS `400`); the ratchet cap and the `adapt_delta`
+schedule; the train/test windows and sample count; the delay-distribution
+parameters and their `1/7` rescaling; and the software versions. The wave dates
+(`December 2021--January 2022`) are fixed by the input data, not the fit.
+
+### F.2 Artefacts
+
+- `R/summary_utils.R` — `read_scores()`, `crps_ratio_summary()` and
+  `pop_order`, lifted out of `R/fig_crps_summary_all_provs.R`. The figure and
+  the quoted ratios now come from one computation; previously the Results
+  restated by hand what the figure script computed.
+- `R/summarise_results.R` — writes the summary. Rounding lives here and nowhere
+  else, so the prose and the figures cannot round the same quantity
+  differently. The "typical range" of ESS per second is defined as the 5th to
+  95th percentile pooled across provinces, which is the rule that reproduces
+  the previously quoted bands.
+- `local/output/diagnostics_%.csv` — gained `ratchets`, `date` and the run
+  times. Refit counts previously lived only in `forecast_*.rds` `$timing`, so
+  anything needing them had to open ~206 MB of samples; the diagnostics panel
+  figure no longer does.
+- `local/output/paper_summary.rds` — committed, via a `.gitignore` negation
+  that must stay at the end of the file, since the `*.rds` rule above it would
+  otherwise win.
+
+**`R/summary_utils.R` is deliberately not part of `R/pipeline_shared_inputs.R`.**
+That file is a prerequisite of the forecasting rules, so editing it marks every
+forecast out of date and the next `make` refits the entire pipeline. Anything
+that only post-processes results belongs outside it.
+
+### F.3 Claims, not just values
+
+The D1/D2/D3 failures were narrative reversals: the number changed sign or
+ordering and the surrounding sentence became false. Inline values do not catch
+this, so the summary script also evaluates the nine directional statements the
+prose depends on (C1–C9 in the script) and stops **before writing anything** if
+one fails — so `make` fails, no stale artefact is left for the next run to
+mistake for current, and the error names the sentence to rewrite. `paper.qmd`
+re-checks the stored claims at render time.
+
+### F.4 Prose consequences
+
+Three sentences changed shape rather than just numbers, and the rounded hedges
+were dropped throughout in favour of exact values (`20.4%` rather than "around
+one-fifth"); see `paper_changes.md` for the detail. The abstract and
+author-summary keep hand-written prose — Quarto does not execute inline code in
+YAML front matter — but they are qualitative, and the claim assertions fail the
+build if the direction they describe flips.
 
 | # | Change | Commit |
 |---|---|---|
-| F1 | Replace hardcoded ranges at D1-D4 with inline R expressions computed from `local/output/` | |
+| F1 | Lift the CRPS-ratio computation into `R/summary_utils.R`; fold refit counts and slide dates into `diagnostics_%.csv`; repoint the diagnostics panel figure at it | `046ee6e` |
+| F2 | Add `R/summarise_results.R`, the `.gitignore` negation and the Makefile wiring; commit `local/output/paper_summary.rds` | `9b10ee8` |
+| F3 | Replace the 34 hand-written values in Results and Discussion with inline references | `bd02d74` |
+| F4 | Directional claims C1–C9, checked before the artefact is written and again at render time | `9b10ee8` |
+| F5 | Give the render workflow an R installation, without which the paper can no longer be built in CI | `de2faf7` |

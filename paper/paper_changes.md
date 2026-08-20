@@ -192,6 +192,41 @@ consistently worst on every computational axis" no longer held:
 Full before/after numbers and the reasoning for each item are in
 `paper_plan.md` section D.
 
+## Result numbers derived from the pipeline (20 Aug 2026)
+
+The Results and Discussion no longer contain hand-written result numbers. See
+`paper_plan.md` section F for the design and the rationale.
+
+| Commit | Change |
+|---|---|
+| `046ee6e` | Lifted `read_scores()`, `crps_ratio_summary()` and `pop_order` into a new `R/summary_utils.R`, so the summary figure and the quoted ratios come from one computation. Folded the adaptive refit counts, slide dates and run times into `diagnostics_%.csv`, and repointed `R/fig_panel_diagnostics.R` at it. Verified the summary figure and all ten diagnostics panels are byte-identical afterwards. |
+| `9b10ee8` | Added `R/summarise_results.R`, which reduces the scores and diagnostics to the 32 values the manuscript quotes and evaluates the nine directional claims the prose depends on, stopping before it writes anything if one fails. Committed `local/output/paper_summary.rds` via a `.gitignore` negation. |
+| `bd02d74` | Replaced the 34 hand-written values in the Results and Discussion with inline references to that summary. |
+| `de2faf7` | Gave the render workflow an R installation, without which the manuscript can no longer be built in CI. |
+
+Three sentences changed shape rather than just numbers:
+
+- **CRPS spread** (Results, forecast performance): "scores rise by one to two
+  orders of magnitude" had no single derivable value behind it, and is now the
+  10th-to-90th-percentile span. The "up to three orders of magnitude during the
+  largest wave" clause stays prose — it describes a named date window in a
+  figure — and is guarded by claim C9 instead.
+- **Weekly's sampling-efficiency excursions**: "occasional excursions below 5"
+  was also true of the daily and rescaled weekly models, so it drew no
+  contrast. Replaced with weekly's actual minimum, which is three orders of
+  magnitude below either of theirs.
+- **Refit shares**: the daily and rescaled weekly models were given a shared
+  "under 6%" bound; they are now stated separately.
+
+The rounded hedges were dropped throughout in favour of exact values — "around
+one-fifth of slides" became "20.4% of slides", "around 70% across provinces"
+became "70.6% of dates". The hedges existed because the numbers were
+hand-copied and might drift.
+
+The abstract and author-summary keep hand-written prose, since Quarto does not
+execute inline code in YAML front matter. Both are qualitative, and the claim
+assertions fail the build if the direction they describe ever flips.
+
 ## Resolved elsewhere
 
 ### `rhat` vs `max_rhat` column mismatch
@@ -207,6 +242,7 @@ from the `c()`. The accept rule therefore ran on a **two**-element vector,
 stopping only when both divergences and bulk ESS passed, instead of on any two
 of three.
 
-Every artefact in `local/output/` predates this fix, so all quantitative results
-in the manuscript are provisional. See `paper_plan.md` section D for the eight
-claims blocked on regeneration.
+`local/output/` was regenerated in full on 2026-08-17, after this fix, and the
+manuscript was brought into line with the post-fix numbers at `901a369` and
+`5a25800`. See `paper_plan.md` section D for what each of those items changed;
+the numbers are now re-derived on every render rather than transcribed.

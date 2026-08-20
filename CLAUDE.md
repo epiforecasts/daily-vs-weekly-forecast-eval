@@ -192,6 +192,36 @@ The required workflow:
 4. **Refresh line references in `paper_plan.md`** after any edit that shifts line numbers, and state which commit they are current as of. Editing the Methods routinely moves the Results and Discussion by a dozen lines.
 5. **Verify every hash is reachable** (`git merge-base --is-ancestor <hash> HEAD`) before recording it. This branch has been rebased before, and orphaned commits still resolve under `git show`, so a stale hash looks valid while pointing at history no longer on any branch.
 
+### Result numbers in the manuscript
+
+**Never write a result number into `paper.qmd` by hand.** Every quantity the
+Results and Discussion quote is computed by `R/summarise_results.R` into
+`local/output/paper_summary.rds` and referenced inline as `` `r v("key")` ``.
+To quote something new, add it to the `vals` list in that script and rebuild
+with `make paper_summary`.
+
+Rounding lives in that script and nowhere else, so the prose and the figures
+cannot round the same quantity differently.
+
+The script also evaluates the directional statements the prose depends on --
+that weekly-trained forecasts are worse in every province, that median refits
+is zero everywhere, and so on. If one stops holding, it stops **before writing
+anything** and names the claim, so `make` fails rather than leaving a stale
+artefact. A failing claim means a *sentence* has become false and needs
+rewriting, not that a number needs nudging. Add a claim whenever the prose
+starts to depend on a direction, an ordering, or a count.
+
+Two things this does not cover. The abstract and author-summary are YAML front
+matter, which Quarto does not execute, so they must stay qualitative. And
+design constants -- convergence thresholds, window lengths, sample counts,
+delay-distribution parameters -- are pipeline inputs rather than results, so
+they stay written out.
+
+Post-processing helpers belong in `R/summary_utils.R`, **not**
+`R/pipeline_shared_inputs.R`: the latter is a prerequisite of the forecasting
+rules, so editing it marks every forecast out of date and the next `make`
+refits the whole pipeline.
+
 ### Manuscript writing style
 
 **Do not name functions in the prose.** Describe what the function does instead, so the text reads as a method rather than as an API reference and stays meaningful to readers who do not use the package. For example, write "the input series was completed so that every date in its range was present, with reports accumulated onto the date where the next report occurred" rather than "`fill_missing()` was called".
