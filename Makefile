@@ -130,6 +130,15 @@ ${OUTDIR}/score_%.rds: R/score.R ${DATDIR}/daily_%.rds ${DATDIR}/weekly_%.rds ${
 ${OUTDIR}/diagnostics_%.csv: R/diagnostics.R ${OUTDIR}/forecast_daily_%.rds ${OUTDIR}/forecast_weekly_%.rds ${OUTDIR}/forecast_rescale_%.rds ${SHARED_INPUTS}
 	$(call R)
 
+# Values quoted in the manuscript. Committed to the repository (see .gitignore)
+# because paper.qmd reads it at render time and CI has no local/output/.
+${OUTDIR}/paper_summary.rds: R/summarise_results.R ${SUMMARY_UTILS} \
+	$(patsubst %,${OUTDIR}/score_%.rds,${PROVINCES} RSA) \
+	$(patsubst %,${OUTDIR}/diagnostics_%.csv,${PROVINCES} RSA)
+	Rscript $< ${OUTDIR} ${SUMMARY_UTILS} $@
+
+paper_summary: ${OUTDIR}/paper_summary.rds
+
 # all targets at once
 all_diagnostics: $(patsubst %,${OUTDIR}/diagnostics_%.csv,${PROVINCES} RSA)
 all_forecasts: $(patsubst %,${OUTDIR}/forecast_daily_%.rds,${PROVINCES} RSA) $(patsubst %,${OUTDIR}/forecast_weekly_%.rds,${PROVINCES} RSA) $(patsubst %,${OUTDIR}/forecast_rescale_%.rds,${PROVINCES} RSA)
@@ -152,7 +161,7 @@ PAPERDIR := paper
 PAPERSRC := ${PAPERDIR}/paper.qmd
 PAPEROUT := ${PAPERDIR}/paper.pdf
 
-${PAPEROUT}: ${PAPERSRC} ${PAPERDIR}/bibliography.bib
+${PAPEROUT}: ${PAPERSRC} ${PAPERDIR}/bibliography.bib ${OUTDIR}/paper_summary.rds
 	cd ${PAPERDIR} && quarto render paper.qmd
 
 paper_main_text: ${PAPEROUT}
@@ -169,6 +178,6 @@ supplementary: ${SUPPOUT}
 # Combined paper + supplementary target
 paper_full: paper_main_text supplementary
 
-.PHONY: paper_main_text supplementary paper_full
+.PHONY: paper_main_text supplementary paper_full paper_summary
 
 endrule: all_figs
