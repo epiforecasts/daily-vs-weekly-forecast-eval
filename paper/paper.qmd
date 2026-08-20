@@ -58,7 +58,24 @@ abstract: |
 author-summary: |
   Epidemic forecasters must often decide whether to use detailed daily case reports or coarser weekly totals as model inputs. Daily data are considered the gold standard, but they are costlier to collect and process. We systematically compared forecasts of COVID-19 cases across nine South African provinces using the EpiNow2 modelling framework with daily, weekly, and rescaled weekly data inputs. We evaluated both forecast accuracy (using the Continuous Ranked Probability Score) and computational efficiency (using effective sample size per second and adaptive refit counts). Our results show that daily and weekly data inputs produced broadly similar, though not identical, forecast performance --- weekly inputs were modestly but consistently less accurate --- and that the weekly data needed more frequent adaptive model refitting to achieve reliable convergence, even though its typical sampling speed was not consistently lower than daily's. The rescaled weekly approach, which compressed weeks into pseudo-days, achieved high sampling efficiency but substantially worse predictive accuracy. These findings provide practical guidance for balancing data collection costs against forecast quality and computational resources, and offer a workflow for achieving comparable fits across temporal resolutions that can be adapted to other forecasting problems.
 bibliography: bibliography.bib
+execute:
+  echo: false
+  warning: false
+  message: false
 ---
+
+```{r}
+#| include: false
+# Values quoted in the Results and Discussion, derived from local/output/ by
+# R/summarise_results.R and committed with the repository. Never write a result
+# number into the prose by hand: add it to that script and reference it here.
+S <- readRDS(file.path("..", "local", "output", "paper_summary.rds"))
+v <- function(key) S$vals[[key]]
+
+# The summary script refuses to write an artefact whose directional claims have
+# stopped holding, so this only fires if an older summary is in place.
+stopifnot(all(S$claims$holds))
+```
 
 # Introduction
 
@@ -392,13 +409,14 @@ computational diagnostics were only partly consistent, as detailed below.
 
 @fig-panel-scores-EC shows the CRPS time series for the EC alongside the
 observed daily and weekly incidence. On a log scale, CRPS tracks the incidence
-level closely: scores rise by one to two orders of magnitude during epidemic
-wave peaks and fall during inter-wave troughs --- up to three orders of
-magnitude during the largest wave (December 2021--January 2022) --- reflecting
+level closely: the bulk of the scores span `r v("crps_oom_typical")` orders of
+magnitude between the inter-wave troughs and the epidemic wave peaks, and the
+extremes span more than three orders of magnitude, the widest of them during
+the largest wave (December 2021--January 2022) --- reflecting
 the larger absolute errors inherent to higher case counts. When evaluated
 against daily observations, forecasts trained on daily data produce lower CRPS
-than those trained on weekly data on the majority of dates (around 70% across
-provinces), though this advantage is not consistently concentrated in periods
+than those trained on weekly data on `r v("pct_dates_daily_better")`% of dates
+across provinces, though this advantage is not consistently concentrated in periods
 of rapidly changing incidence. When evaluated against weekly observations, the
 weekly-trained forecasts remain modestly but consistently worse than the
 daily-trained forecasts, rather than comparable. In contrast, the rescaled
@@ -414,22 +432,29 @@ predictive performance.
 @fig-panel-diagnostics-EC displays the tail ESS per second and the number of
 adaptive ratchets for the EC. The rescaled weekly model achieves the highest
 sampling efficiency, with tail ESS per second typically in the range of
-400--5000 (interquartile range 2700--4100), reflecting the smaller effective
+`r v("ess_resc_lo")`--`r v("ess_resc_hi")` (interquartile range
+`r v("ess_resc_iqr_lo")`--`r v("ess_resc_iqr_hi")`), reflecting the smaller effective
 dataset size in the compressed time representation. The daily and weekly
-models show broadly similar efficiency --- daily typically 40--270 ESS per
-second (interquartile range 98--180), weekly typically 15--380 (interquartile
-range 57--210) --- with weekly showing wider variability, including occasional
-excursions below 5, rather than a consistently lower level. The ratchet counts
+models show broadly similar efficiency --- daily typically
+`r v("ess_daily_lo")`--`r v("ess_daily_hi")` ESS per second (interquartile range
+`r v("ess_daily_iqr_lo")`--`r v("ess_daily_iqr_hi")`), weekly typically
+`r v("ess_weekly_lo")`--`r v("ess_weekly_hi")` (interquartile range
+`r v("ess_weekly_iqr_lo")`--`r v("ess_weekly_iqr_hi")`) --- with weekly showing
+wider variability, falling as low as `r v("ess_weekly_min")` at its worst,
+rather than sitting at a consistently lower level. The ratchet counts
 show a different pattern: for every configuration, the majority of slides
 converge without any adaptive refit. The weekly model required at least one
-refit in around one-fifth of slides (up to 11 in the most difficult cases),
-compared with under 6% of slides for both the daily and rescaled weekly models
-(maximum 1 and 11 refits respectively). Refitting is therefore a tail
+refit in `r v("refit_pct_weekly")`% of slides (up to `r v("refit_max_weekly")`
+in the most difficult cases), compared with `r v("refit_pct_daily")`% and
+`r v("refit_pct_resc")`% of slides for the daily and rescaled weekly models
+(maximum `r v("refit_max_daily")` and `r v("refit_max_resc")` refits
+respectively). Refitting is therefore a tail
 phenomenon rather than a routine cost, though the weekly model is
 disproportionately represented in that tail. The ratchet-frequency ordering
 (weekly highest) held in all nine provinces and the national aggregate, but
 the daily-versus-weekly ESS-per-second ordering did not: weekly had higher
-median efficiency than daily in six of the ten locations.
+median efficiency than daily in `r v("n_prov_weekly_ess_gt_daily")` of the
+`r v("n_prov_total")` locations.
 
 ![Computational diagnostics for the Eastern Cape province (EC). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide. Equivalent results for all other provinces are available in the Supplementary Materials.](../local/figures/fig_panel_diagnostics_EC.png){#fig-panel-diagnostics-EC}
 
@@ -437,14 +462,20 @@ median efficiency than daily in six of the ten locations.
 
 @fig-crps-all-provs-summarised compares the geometric mean CRPS ratio relative
 to the daily-trained baseline across all provinces. When evaluated against daily
-observations, the weekly-trained model produces CRPS approximately 1.3--1.9
-times higher than the daily-trained baseline (median 1.5×) across provinces.
+observations, the weekly-trained model produces CRPS
+`r v("crps_wkly_at_daily_lo")`--`r v("crps_wkly_at_daily_hi")`
+times higher than the daily-trained baseline (median
+`r v("crps_wkly_at_daily_med")`×) across provinces.
 When evaluated against weekly observations, the weekly-trained model produces
-CRPS approximately 1.2--1.7 times higher than the daily-trained baseline
-(median 1.4×) --- consistently worse rather than comparable, though the gap
+CRPS `r v("crps_wkly_at_weekly_lo")`--`r v("crps_wkly_at_weekly_hi")` times
+higher than the daily-trained baseline
+(median `r v("crps_wkly_at_weekly_med")`×) --- consistently worse rather than
+comparable, though the gap
 narrows relative to the daily-observation comparison. The rescaled weekly
-model performs markedly worse, with CRPS ratios of approximately 61--97 times
-higher (median 79×) than the daily-trained baseline when both are evaluated
+model performs markedly worse, with CRPS ratios of
+`r v("crps_resc_at_weekly_lo")`--`r v("crps_resc_at_weekly_hi")` times
+higher (median `r v("crps_resc_at_weekly_med")`×) than the daily-trained
+baseline when both are evaluated
 against weekly observations. Province-to-province variability within each
 comparison scenario is small relative to the differences between scenarios,
 indicating that the relative performance of each approach is robust across
@@ -470,12 +501,16 @@ more frequent access).
 Our central finding on forecast performance is that daily and weekly data inputs
 yield CRPS of a similar order of magnitude, though not identical, when
 forecasts are evaluated at the same temporal resolution. When evaluated
-against weekly observations, the weekly-trained model produces CRPS 1.2--1.7
-times higher than the daily-trained model (median 1.4×) --- consistently
+against weekly observations, the weekly-trained model produces CRPS
+`r v("crps_wkly_at_weekly_lo")`--`r v("crps_wkly_at_weekly_hi")`
+times higher than the daily-trained model
+(median `r v("crps_wkly_at_weekly_med")`×) --- consistently
 somewhat worse, rather than comparable --- and when evaluated against daily
-observations the weekly-trained model is 1.3--1.9 times worse. In contrast,
-the rescaled weekly approach produces CRPS 61--97 times larger than the
-daily-trained baseline. This pronounced degradation likely arises because
+observations the weekly-trained model is
+`r v("crps_wkly_at_daily_lo")`--`r v("crps_wkly_at_daily_hi")` times worse. In
+contrast, the rescaled weekly approach produces CRPS
+`r v("crps_resc_at_weekly_lo")`--`r v("crps_resc_at_weekly_hi")` times larger
+than the daily-trained baseline. This pronounced degradation likely arises because
 compressing weekly intervals into pseudo-daily steps distorts the temporal
 dynamics that EpiNow2's renewal equation is designed to capture: generation
 times, incubation periods, and reporting delays are all divided by seven,
@@ -491,12 +526,14 @@ The computational requirements of the three approaches present a more nuanced
 picture than their predictive performance alone would suggest. The weekly
 model, despite producing forecast accuracy only modestly worse than the daily
 model, converged less reliably: it required at least one adaptive refit in
-around one-fifth of forecast windows (up to 11 in the most difficult cases),
-compared with under 6% of windows for both the daily and rescaled weekly
-models. This was not, however, accompanied by consistently lower steady-state
+`r v("refit_pct_weekly")`% of forecast windows (up to
+`r v("refit_max_weekly")` in the most difficult cases), compared with
+`r v("refit_pct_daily")`% and `r v("refit_pct_resc")`% of windows for the daily
+and rescaled weekly models respectively. This was not, however, accompanied by consistently lower steady-state
 sampling efficiency --- tail ESS per second for the weekly and daily models
 overlapped substantially across provinces, with weekly showing a higher
-median than daily in six of the ten locations. Weekly's additional
+median than daily in `r v("n_prov_weekly_ess_gt_daily")` of the
+`r v("n_prov_total")` locations. Weekly's additional
 computational burden therefore shows up as wider variability and a heavier
 tail of slow, hard-to-converge fits, rather than as a uniformly slower
 sampler. This pattern is consistent with the challenge of fitting a model
@@ -504,7 +541,8 @@ designed for daily latent dynamics to data observed only once per week: most
 weeks the posterior geometry is unremarkable, but the implicit
 marginalisation over unobserved daily counts occasionally produces a
 substantially harder fit. Conversely, the rescaled weekly model achieved the
-highest sampling efficiency by a wide margin (typically 400--5000 tail ESS
+highest sampling efficiency by a wide margin (typically
+`r v("ess_resc_lo")`--`r v("ess_resc_hi")` tail ESS
 per second) because its compressed time axis greatly reduced the effective
 number of latent time steps, simplifying the posterior. However, this
 computational efficiency came at the cost of dramatically worse predictive
@@ -571,7 +609,7 @@ For practitioners deciding between daily and weekly data inputs, we recommend
 the following workflow. First, if daily data are available and computational
 resources permit, daily-resolution forecasting with EpiNow2 provides the best
 combination of forecast accuracy and reliable convergence, needing an
-adaptive refit in under 4% of forecast windows. Second, when only weekly data
+adaptive refit in `r v("refit_pct_daily")`% of forecast windows. Second, when only weekly data
 are available --- or when daily collection and processing costs are
 prohibitive --- the standard weekly approach, in which the latent process is
 retained on a daily scale and the unreported days are modelled as missing and
@@ -579,8 +617,9 @@ accumulated, can achieve forecast accuracy within a similar order of
 magnitude of the daily approach, provided that sufficient computational
 budget is allocated for adaptive tuning; practitioners should expect most
 forecast windows to converge without any adaptive refit, but should budget
-for the possibility of several refits (up to around 11 in the most difficult
-windows) in roughly one in five windows, and should monitor convergence using
+for the possibility of several refits (up to `r v("refit_max_weekly")` in the
+most difficult windows) in `r v("refit_pct_weekly")`% of windows, and should
+monitor convergence using
 the diagnostic thresholds described in this study (divergences below 0.25% of
 total draws, $\hat{R}$ below 1.01, and bulk ESS above 400). Third, the
 rescaled weekly approach, while computationally
