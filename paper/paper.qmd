@@ -1,22 +1,22 @@
 ---
-title: "Epidemiological forecasting using daily versus weekly aggregated data: Computational and practical implications"
+title: "Evaluating epidemiological forecasts using daily versus weekly aggregated data: Computational and practical implications"
 format:
   plos-pdf:
     number-sections: false
     journal:
-      # This is an identifier for the target journal: 
-      # from https://plos.org/resources/writing-center/ following submission guidelines link, the identifier is the part of the URL after https://journals.plos.org/<id>/s/submission-guidelines
+    # This is an identifier for the target journal:
+    # from https://plos.org/resources/writing-center/ following submission guidelines link, the identifier is the part of the URL after https://journals.plos.org/<id>/s/submission-guidelines
       id: plosone
     include-in-header:
       text: |
         % Remove comment for double spacing
-        % \usepackage{setspace} 
+        % \usepackage{setspace}
         % \doublespacing
 author:
   - name: James Mba Azam
     affiliations:
       - ref: aff1
-      - ref: aff4
+      - ref: aff2
     email: james.azam@lshtm.ac.uk
     corresponding: true
   - name: Sam Abbott
@@ -54,102 +54,585 @@ affiliations:
     state: North Carolina
     country: United States
 abstract: |
-  Infectious disease forecasting is useful for public health decision-making, including resource allocation and the timing of outbreak response interventions. Forecast quality is impacted by the quality of the data inputs, including spatio-temporal resolution, but the extent is still an area of active research. Here, we evaluate differences between forecast performance and computational requirements between daily and weekly COVID-19 incidence data from the nine provinces of South Africa as forecasting inputs. We use the EpiNow2 R package as the core forecasting engine in an analysis pipeline that simulates in situ realtime forecasting with varying data streams.  We evaluate generated forecasts against realized outcomes using the continuous ranked probability score (CRPS) and Effective Sample Size per second as measures of forecast performance and computational efficiency respectively. We find consistent trends in forecast performance (CRPS) and computational efficiency (ESS per second) across time, location, and forecast target resolution. Although both data inputs produced comparable forecast performance, the lower resolution weekly data inputs had lower computational efficiency. We describe a workflow for achieving comparable fits to data between daily and weekly data that can be applicable to similar forecasting problems. The extent to which these tradeoffs matter is context-specific, and varies depending on the public health question at hand. Therefore, the overall analytical costs, including collecting higher temporal resolution data and supplying greater computational resources, need to be weighed against the benefits of improved decision-making outcomes, like more prompt interventions and fewer false alarms. This analysis provides useful evidence towards establishing benchmark analyses for that kind of valuation of forecasting activities.
+  Infectious disease forecasting is useful for public health decision-making, including resource allocation and the timing of outbreak response interventions. Forecast quality is impacted by the quality of the data inputs, including spatio-temporal resolution, but the extent is still an area of active research. Here, we evaluate differences between forecast performance and computational requirements between daily and weekly COVID-19 incidence data from the nine provinces of South Africa as forecasting inputs. We use the EpiNow2 R package as the core forecasting engine in an analysis pipeline that simulates in situ realtime forecasting with varying data streams.  We evaluate generated forecasts against realized outcomes using the continuous ranked probability score (CRPS) and Effective Sample Size per second as measures of forecast performance and computational efficiency respectively. We find consistent trends in forecast performance (CRPS) across time, location, and forecast target resolution, while computational efficiency (ESS per second) was less consistent across location. Weekly data inputs produced modestly but consistently worse forecast performance than daily inputs, and required more frequent adaptive model refitting to reach reliable convergence, rather than uniformly lower raw sampling efficiency. We describe a workflow for achieving comparable fits to data between daily and weekly data that can be applicable to similar forecasting problems. The extent to which these tradeoffs matter is context-specific, and varies depending on the public health question at hand. Therefore, the overall analytical costs, including collecting higher temporal resolution data and supplying greater computational resources, need to be weighed against the benefits of improved decision-making outcomes, like more prompt interventions and fewer false alarms. This analysis provides useful evidence towards establishing benchmark analyses for that kind of valuation of forecasting activities.
 author-summary: |
-  Author summary to be inserted
-bibliography: bibliography.bib 
+  Epidemic forecasters must often decide whether to use detailed daily case reports or coarser weekly totals as model inputs. Daily data are considered the gold standard, but they are costlier to collect and process. We systematically compared forecasts of COVID-19 cases across nine South African provinces using the EpiNow2 modelling framework with daily, weekly, and rescaled weekly data inputs. We evaluated both forecast accuracy (using the Continuous Ranked Probability Score) and computational efficiency (using effective sample size per second and adaptive refit counts). Our results show that daily and weekly data inputs produced broadly similar, though not identical, forecast performance --- weekly inputs were modestly but consistently less accurate --- and that the weekly data needed more frequent adaptive model refitting to achieve reliable convergence, even though its typical sampling speed was not consistently lower than daily's. The rescaled weekly approach, which compressed weeks into pseudo-days, achieved high sampling efficiency but substantially worse predictive accuracy. These findings provide practical guidance for balancing data collection costs against forecast quality and computational resources, and offer a workflow for achieving comparable fits across temporal resolutions that can be adapted to other forecasting problems.
+bibliography: bibliography.bib
+execute:
+  echo: false
+  warning: false
+  message: false
 ---
+
+```{r}
+#| include: false
+# Values quoted in the Results and Discussion, derived from local/output/ by
+# R/summarise_results.R and committed with the repository. Never write a result
+# number into the prose by hand: add it to that script and reference it here.
+S <- readRDS(file.path("..", "local", "output", "paper_summary.rds"))
+v <- function(key) S$vals[[key]]
+
+# The summary script refuses to write an artefact whose directional claims have
+# stopped holding, so this only fires if an older summary is in place.
+stopifnot(all(S$claims$holds))
+```
 
 # Introduction
 
-Infectious disease forecasts are increasingly used to inform public health decisions such as resource allocation and the timing of interventions during large outbreaks like influenza [@doms_assessing_2018], Ebola [@meltzer_modeling_2016; @carias_forecasting_2019], and the COVID-19 pandemic [@reich_collaborative_2022]. Many approaches for making such forecasts exist, varying from highly mechanistic, capturing the biological processes, to statistical, relying on previously observed patterns in the data [@lauer_infectious_2020; @banholzer_comparison_2023]. However, the conditions under which a particular forecasting approach is most appropriate remain an open question [@lauer_infectious_2020].
+Infectious disease forecasts are increasingly used to inform public health
+decisions such as resource allocation and the timing of interventions during
+large outbreaks like influenza [@doms_assessing_2018], Ebola
+[@meltzer_modeling_2016; @carias_forecasting_2019], and the COVID-19 pandemic
+[@reich_collaborative_2022]. Many approaches for making such forecasts exist,
+varying from highly mechanistic, capturing the biological processes, to
+statistical, relying on previously observed patterns in the data
+[@lauer_infectious_2020; @banholzer_comparison_2023]. However, the conditions
+under which a particular forecasting approach is most appropriate remain an open
+question [@lauer_infectious_2020].
 
-Infectious disease forecasting models are often calibrated and confronted with data characterized by noise, incompleteness, and temporal delays in reporting and the interpretation of forecasts in this context is often of concern [@reich_collaborative_2022; @nash_realtime_2022; @nash_estimating_2023]. The temporal resolution of surveillance data is a key determinant of forecast performance with daily data being the gold standard as data aggregation lowers data fidelity and may mask short-term fluctuations [@reich_collaborative_2022]. Towards the latter parts of the COVID-19 pandemic, many health agencies shifted from daily to weekly case reporting to reduce the cost and burden of data collection [@conway_joint_2024]. Data is often aggregated for several reasons including removing week-day and weekend reporting biases.
+Infectious disease forecasting models are often calibrated and confronted with
+data characterized by noise, incompleteness, and temporal delays in reporting
+and the interpretation of forecasts in this context is often of concern
+[@reich_collaborative_2022; @nash_realtime_2022; @nash_estimating_2023]. The
+temporal resolution of surveillance data is a key determinant of forecast
+performance with daily data being the gold standard as data aggregation lowers
+data fidelity and may mask short-term fluctuations [@reich_collaborative_2022].
+Towards the latter parts of the COVID-19 pandemic, many health agencies shifted
+from daily to weekly case reporting to reduce the cost and burden of data
+collection [@conway_joint_2024]. Data is often aggregated for several reasons
+including removing week-day and weekend reporting biases.
 
-Temporally aggregated data can be used for forecasting, but they also point to trade-offs between fidelity, bias reduction, and computational burden. Several recent studies have introduced algorithms to estimate transmission from aggregated incidence data. The EpiEstim R package uses an expectation-maximisation method for reconstructing daily case counts from weekly reports, allowing rapid estimation of time-varying reproduction numbers [@nash_estimating_2023]. Another approach applied simulation-based methods using Approximate Bayesian Computation (ABC), recovering reproduction numbers accurately from weekly data, albeit with increased algorithmic complexity resulting from the repeated simulation of cases using ABC [@ogi-gittins_simulation-based_2025]. A Sequential Monte Carlo framework fit to renewal models either with day-of-week effects or with weekly aggregation has achieved good performance with lower root-mean-square error and CRPS than a chosen baseline model [@steyn_primer_2025]. Although these methods demonstrate that aggregated data can be accommodated, their focus is primarily on retrospective inference (e.g., estimating reproduction numbers or elimination probabilities) rather than forecast performance on unseen data. Moreover, there is little discussion of how computational effort scales with data resolution or of how to systematically combine diagnostic checks with proper scoring rules to interpret performance.
+Temporally aggregated data can be used for forecasting, but they also point to
+trade-offs between fidelity, bias reduction, and computational burden. Several
+recent studies have introduced algorithms to estimate transmission from
+aggregated incidence data. The EpiEstim R package uses an
+expectation-maximisation method for reconstructing daily case counts from weekly
+reports, allowing rapid estimation of time-varying reproduction numbers
+[@nash_estimating_2023]. Another approach applied simulation-based methods using
+Approximate Bayesian Computation (ABC), recovering reproduction numbers
+accurately from weekly data, albeit with increased algorithmic complexity
+resulting from the repeated simulation of cases using ABC
+[@ogi-gittins_simulation-based_2025]. A Sequential Monte Carlo framework fit to
+renewal models either with day-of-week effects or with weekly aggregation has
+achieved good performance with lower root-mean-square error and CRPS than a
+chosen baseline model [@steyn_primer_2025]. Although these methods demonstrate
+that aggregated data can be accommodated, their focus is primarily on
+retrospective inference (e.g., estimating reproduction numbers or elimination
+probabilities) rather than forecast performance on unseen data. Moreover, there
+is little discussion of how computational effort scales with data resolution or
+of how to systematically combine diagnostic checks with proper scoring rules to
+interpret performance.
 
-The forecasting research community has established several methods for scoring [@gneiting_strictly_2007; @mitchell_proper_2017; @pic_proper_2024] and evaluating [@tabataba_framework_2017] forecasts. The choice of score/metric depends on the forecast type (point, interval, and probabilistic) and ranges from traditional aggregate measures of distance to Proper Scoring Rules [@lauer_infectious_2020; @gneiting_strictly_2007; @mitchell_proper_2017; @pic_proper_2024; @bracher_evaluating_2021]. Forecast evaluation metrics such as the continuous ranked probability score (CRPS) quantify the distance between predicted and observed distributions and are widely adopted to assess forecast performance against observed data [@gneiting_strictly_2007; @bracher_evaluating_2021; @funk_assessing_2019]. Recent work highlights that while existing metrics address theoretical concerns such as calibration and sharpness, they rarely address the operational challenges of generating forecasts, including reporting frequency and computational resourcing, pointing to a need for evaluation frameworks that bridge statistical evaluation and practical relevance [@murphy_what_1993].
+The forecasting research community has established several methods for scoring
+[@gneiting_strictly_2007; @mitchell_proper_2017; @pic_proper_2024] and
+evaluating [@tabataba_framework_2017] forecasts. The choice of score/metric
+depends on the forecast type (point, interval, and probabilistic) and ranges
+from traditional aggregate measures of distance to Proper Scoring Rules
+[@lauer_infectious_2020; @gneiting_strictly_2007; @mitchell_proper_2017; @pic_proper_2024; @bracher_evaluating_2021].
+Forecast evaluation metrics such as the continuous ranked probability score
+(CRPS) quantify the distance between predicted and observed distributions and
+are widely adopted to assess forecast performance against observed data
+[@gneiting_strictly_2007; @bracher_evaluating_2021; @funk_assessing_2019].
+Recent work highlights that while existing metrics address theoretical concerns
+such as calibration and sharpness, they rarely address the operational
+challenges of generating forecasts, including reporting frequency and
+computational resourcing, pointing to a need for evaluation frameworks that
+bridge statistical evaluation and practical relevance [@murphy_what_1993].
 
-Here, we benchmark a method for handling aggregated data in the EpiNow2 R package version 1.7.1 [@abbott_estimating_2020; @abbott_epinow2_2025]. Briefly, the EpiNow2 approach models daily latent infections using the renewal equation and maps them to observations using discrete convolutions of delay distributions, including the incubation period and reporting delays. We generate forecasts from daily and weekly COVID-19 reported cases in South Africa between March 2020 - August 2022 [@marivate_coronavirus_2020; @marivate_use_2020], evaluate their accuracy using CRPS, assess convergence through rhat [@vehtari_rank-normalization_2021] and divergent transitions, and computational efficiency via effective sample size per second. By combining proper scoring rules with diagnostic measures, we quantify how forecast performance and computational requirements vary with data granularity and demonstrate how to achieve comparable fits across temporal resolutions. Our findings provide a transparent assessment of the trade-offs inherent in using aggregated data for real-time forecasting and offer practical guidance for balancing data collection efforts with forecasting needs, thereby advancing the development of evaluation standards and improving the utility of epidemic forecasts for public health decision-making.
+Here, we benchmark a method for handling aggregated data in the EpiNow2 R
+package version 1.7.1 [@abbott_estimating_2020; @abbott_epinow2_2025]. Briefly,
+the EpiNow2 approach models daily latent infections using the renewal equation
+and maps them to observations using discrete convolutions of delay
+distributions, including the incubation period and reporting delays. We generate
+forecasts from daily and weekly COVID-19 reported cases in South Africa between
+March 2020 - August 2022 [@marivate_coronavirus_2020; @marivate_use_2020],
+evaluate their accuracy using CRPS, assess convergence through rhat
+[@vehtari_rank-normalization_2021] and divergent transitions, and computational
+efficiency via effective sample size per second. By combining proper scoring
+rules with diagnostic measures, we quantify how forecast performance and
+computational requirements vary with data granularity and demonstrate how to
+achieve comparable fits across temporal resolutions. Our findings provide a
+transparent assessment of the trade-offs inherent in using aggregated data for
+real-time forecasting and offer practical guidance for balancing data collection
+efforts with forecasting needs, thereby advancing the development of evaluation
+standards and improving the utility of epidemic forecasts for public health
+decision-making.
 
 # Methods
 
-We developed a pipeline to get and clean observed data, perform the forecasts and save associated computational quantities such as MCMC convergence metrics and diagnostics and model run times, score the forecasts, and consolidate the outcomes for analysis and visualisation. In the following sections, we provide more detail on the individual parts of the pipeline.
+We developed a pipeline (@fig-pipeline-flowchart) to get and clean observed
+data, generate forecasts of reported cases, and extract associated computational
+quantities such as MCMC convergence metrics and diagnostics and model run times,
+score the forecasts, and consolidate the outcomes for analysis and
+visualisation. In the following sections, we provide more detail on the
+individual parts of the pipeline.
 
-<!-- Mermaid diagram of pipeline to be added -->
+![A schematic of the analysis pipeline. The pipeline consists of four main stages: Data Preparation (getting and cleaning raw provincial daily data, aggregating to weekly, and generating rescaled weekly data), Forecasting Models (daily, weekly, and rescaled weekly models), Evaluation (forecast scoring using CRPS and diagnostics including divergences and ESS tail per second), and Visualisation (plotting log(Incidence) vs log(CRPS) and log(Incidence) vs log(ESS tail/sec) and ratchets).](analysis_pipeline.png){#fig-pipeline-flowchart}
 
 ## Data
 
-We obtained and cleaned cumulative COVID-19 case counts for the nine South African provinces [@marivate_coronavirus_2020; @marivate_use_2020]. The cleaning process focused on common reporting issues. First, two all-NA report dates (2020-03-27 and 2020-04-07) were removed up front. Next, the cumulative counts were converted to daily incidence per province by ordered differencing of non-missing values. We then corrected three reporting artefacts using a series of steps as follows:
+We obtained and cleaned cumulative COVID-19 case counts for the nine South
+African provinces [@marivate_coronavirus_2020; @marivate_use_2020]. The cleaning
+process focused on common reporting issues. We removed two all-NA report dates
+($2020-03-27$ and $2020-04-07$). We also converted the cumulative counts to
+daily incidence per province using time-ordered differencing of non-missing
+values. We then corrected three reporting artefacts using a series of steps as
+follows:
 
-- When a positive incidence case count had an equal neighbouring negative count (or vice versa), both values were set to zero.
-- Using the cumulative series, we identified instances where negative daily incidence indicated that cumulative counts had been swapped; in these cases, we corrected the surrounding three-day window by converting the negative value to positive and adjusting the adjacent days so that the cumulative series remained strictly increasing.
-- For any remaining negative daily values, we redistributed counts between a negative count and its positive neighbor by averaging the two values, ensuring both became non-negative while preserving the overall total incidence.
+- When a positive incidence case count had an equal neighbouring negative count
+  (or vice versa), both values were set to zero.
+- Using the cumulative series, we identified instances where negative daily
+  incidence indicated that cumulative counts had been swapped; in these cases,
+  we corrected the surrounding three-day window by converting the negative value
+  to positive and adjusting the adjacent days so that the cumulative series
+  remained strictly increasing.
+- For any remaining negative daily values, we redistributed counts between a
+  negative count and its positive neighbor by averaging the two values, ensuring
+  both became non-negative while preserving the overall total incidence.
 
-After cleaning the time series, we ensured each province had a non-negative daily time series for downstream aggregation and forecasting.
+After cleaning the time series, we ensured each province had a non-negative
+daily time series for downstream aggregation and forecasting.
 
-We aggregated the daily incidence time series into a weekly and rescaled weekly dataset. The weekly data were obtained by summing the daily counts in non-overlapping 7‑day windows. The rescaled weekly data was a variant of the weekly data that represented each weekly total as if it occurred on a single day. This allowed us to evaluate models when all observations were spaced one week apart while preserving comparability with the other two datasets.
+We aggregated the daily incidence time series into a weekly dataset to represent
+the scenario where data is reported on a weekly basis. Weekly observations were
+aligned to a fixed reporting weekday (Friday). To preserve this alignment, the
+front of each provincial time series was padded with missing values when needed,
+and weekly incidence was computed as differences in cumulative incidence between
+consecutive Friday reports. From the weekly datasets, we also generated a
+rescaled weekly dataset. The rescaled weekly data was a variant of the weekly
+data that represented each weekly total as if it occurred on a single day. This
+allowed us to evaluate forecasts based on data where all observations were
+spaced one week apart while preserving comparability with the other two
+datasets.
+
+In addition to province-level datasets, we generated a national (RSA) daily,
+weekly, and rescaled weekly time series by summing across provinces and
+processed it through the same forecasting and scoring pipelines.
+
+In summary, the three types of data inputs were used to reflect common
+observation and reporting patterns:
+
+- daily: both the latent process and the observation process happen on a daily
+  time scale
+- weekly: the latent process happens on a daily time scale but the reports are
+  generated on a weekly time scale
+- rescaled weekly: both the latent and observation process happen on a weekly
+  time scale
 
 ## Forecasting
 
-We used EpiNow2's default model for estimating and forecasting reported cases (epinow) to generate 2-week ahead forecasts of COVID-19 reported cases for each of the nine provinces. We fit the model on 10-week chunks of the daily, weekly, and rescaled weekly data inputs, using 2-week sliding windows, and generated 2-week ahead forecasts for each slide. This approach allowed for consistent evaluation across different phases of the epidemic.
+We used EpiNow2's default model to generate 2-week ahead (14 days)
+forecasts of COVID-19 reported cases for each of the nine provinces of South
+Africa.
 
-We configured the observation model in the default model to match the different observation patterns in the input data. For the daily data, the observation model accounted for day-of-week effects but this was turned off for the weekly and rescaled weekly data because the observations already reflect weekly totals.
+We fitted the 10-week chunks of the daily, weekly, and rescaled weekly data
+inputs, using 2-week sliding windows, and generated 2-week (14 days) ahead
+forecasts for each slide. Before each fit, we removed leading zero-incidence
+observations within each sliding window to reduce instability from pre-epidemic
+periods. Slides where the training window contained fewer non-zero observations
+than twice the forecast horizon (4 weeks or 28 days) were skipped, producing no
+forecast for that window. This approach allowed for consistent evaluation across
+different phases of the epidemic.
 
-EpiNow2 models the weekly aggregated data on a daily scale by accounting for the implicit missing dates and accumulating the modelled reported cases into weekly forecasts corresponding to the dates in the observed data. In this work, when we made forecasts from the weekly resolution data, we effectively set Saturday through Thursday as missing (NA's) and accumulated those reports to Fridays.
+We configured the observation model for each of the three input datasets to
+match the different observation patterns. For the daily data, the observation
+model accounted for day-of-week reporting effects but this was turned off for
+the weekly and rescaled weekly data because the observations already reflect
+weekly totals.
 
-When fitting to the data in a sliding window, we allowed the model to be refitted until reasonable MCMC diagnostic and convergence criteria, defined below, were achieved. Stan (via cmdstanr with EpiNow2) was used for model fitting. We ran 4 chains in parallel, using 4 cores, with 5,000 posterior samples or 1500 iterations per chain. For each refit, we tuned stan's adapt-delta parameter to ensure efficient sampling and reliable convergence. Following recommendations from the Stan Community [@betancourt_identity_2020], the adapt-delta parameter was initiated at 0.80 and increased by 25% of the previous value for the next refit until it reached 0.99, which is the upper limit in stan. Based on the number of refits needed to go from adapt-delta of 0.8 to 0.99 in 25% increments, we determined that each slide could be refitted a maximum of 11 times. When the refit was reached without further improvements to the diagnostics, we returned the last model output. This approach allowed us to prevent the model from being refitted with minor improvements in the diagnostics.
+EpiNow2 default model models the latent process on a daily scale. For weekly
+aggregated data, it accounts for the implicit missing dates and accumulates the
+modelled reported cases into weekly forecasts corresponding to the dates in the
+observed data. In this work, when we generated forecasts from the weekly
+resolution data, we effectively set Saturday through Thursday as missing (NA's),
+modelled those missing dates, and accumulated the realised reports to Fridays.
+Before fitting, EpiNow2 was used to complete each input series so that every
+date in its range was present, with the reports observed on any inserted dates
+accumulated onto the date where the next report occurred. The initial
+accumulation window was $1$ day for daily data and $7$ days for weekly data.
+EpiNow2's model, however, does not explicitly model data on the rescaled weekly
+scale, so we made a few modifications to the data and parameters to allow for
+this use case. We mapped each observed week date to one step on a pseudo-daily
+time scale by replacing the weekly dates with consecutive daily dates. Along
+with this, we also rescaled the parameter values as described later in this
+section. The training window was set to 10 pseudo-days (i.e. 10 weeks) and the
+forecast horizon to 2 pseudo-days (i.e. 2 weeks). After fitting, forecast dates
+were remapped back to their original calendar-week dates.
 
-We measured convergence using various diagnostic metrics. The bulk effective sample size (ESS) quantifies how many independent draws contain the same amount of information as the dependent sample obtained by the MCMC algorithm [@vehtari_rank-normalization_2021; @stan_development_team_stan_2025; @betancourt_conceptual_2018]. We limited bulk ESS to at least 100 per chain, hence a minimum of 400 for the 4 chains, based on recommendations with higher values of ESS indicating efficient mixing of the chains [@vehtari_rank-normalization_2021]. We additionally tracked rhat, which is a measure of MCMC convergence and limited it to 1.05 or less [@vehtari_rank-normalization_2021]. The number of divergent transitions during sampling, which indicates that the Hamiltonian Monte Carlo sampler has failed to accurately explore the posterior distribution due to irregular or complex geometry, potentially leading to biased inference was also limited to 25% of the 5000 samples [@stan_development_team_stan_2025; @betancourt_conceptual_2018; @mcelreath_statistical_2018]. We also tracked the model run times for computing efficiency metrics like the ESS per second. The diagnostic results were summarised per province and dataset, and time series of the ESS per second were plotted alongside reported cases to visualise sampling efficiency over time.
+The model was parameterised as follows. For the daily and weekly models, the
+incubation period was specified as a LogNormal distribution obtained from the
+epiparameter database [@linton_incubation_2020; @lambert_epiparameter_2025],
+truncated at the 99.9th percentile of the fitted distribution. The generation
+time was set to a Gamma distribution with mean 7.12 days, standard deviation
+1.72 days, and a maximum of 10 days, based on estimates for the SARS-CoV-2 Alpha
+variant [@manica_estimation_2022]. For the rescaled weekly pipeline, the
+generation time was divided by $7$, giving a Gamma distribution with mean
+$7.12/7$, standard deviation $1.72/7$, and a maximum of $10/7$. The incubation
+period, by contrast, was not obtained from the epiparameter database and
+rescaled; it was specified directly as LogNormal(mean = $5/7$, sd = $1/7$, max =
+$14/7$). The underlying day-scale values (mean $5$ days, standard deviation $1$
+day, maximum $14$ days) approximate, but may not exactly match, the epiparameter
+distribution used in the daily and weekly models.
 
-## Outputs
+The reporting delay was specified as a LogNormal distribution with meanlog =
+0.58 and sdlog = 0.47 (corresponding to approximately mean 2 days, standard
+deviation 1 day), truncated at a maximum of 10 days. For the rescaled weekly
+pipeline, the reporting delay was likewise divided by $7$, specified as
+LogNormal(mean = $2/7$, sd = $1/7$) and truncated at a maximum of $10/7$. The
+prior on the time-varying reproduction number $R_t$ was set to
+LogNormal(meanlog = 0.69, sdlog = 0.05), corresponding to an approximate mean of
+2 and standard deviation of 0.1.
 
-We saved outputs the forecast reported case counts per slide, MCMC diagnostics, including divergences, rhat, and bulk effective sample size per second, and model run times.
+EpiNow2 uses Stan for model fitting and provides the option to use either the
+`cmdstanr` R package [@cmdstanr] or `rstan` R package [@rstan] as the backend.
+We used the former where available, running $4$ chains in parallel using up to
+$4$ cores (or one fewer than the number of detected cores, whichever was
+smaller), and returning $5,000$ total posterior samples across all chains, with
+an initial step size of $0.1$.
+
+When fitting to the data in a sliding window, we allowed the model to be
+refitted (ratchets) until reasonable MCMC convergence and Stan diagnostic
+criteria, defined below, were achieved. For each ratchet, we tuned Stan's
+adapt-delta parameter to ensure efficient sampling and reliable convergence.
+Following recommendations from members of the Stan Community
+[@betancourt_identity_2020], the adapt-delta parameter was initiated at $0.80$
+and, at each ratchet, increased by $25\%$ of the remaining distance to the upper
+limit of $0.99$ (i.e. the new value equalled the current value plus one quarter
+of the gap between the current value and $0.99$). Based on the number of refits
+needed to go from adapt-delta of $0.80$ to $0.99$ in these increments, we
+determined that each slide could be refitted a maximum of $11$ times. At each
+refit, we continued only when fewer than two of three diagnostic criteria were
+met (divergences, $\hat{R}$, and bulk ESS). When
+the ratchet limit was reached, we returned the last model output irrespective of
+the diagnostic measurements.
+
+We measured convergence using three metrics. The bulk effective sample size
+(ESS) quantifies how many independent draws contain the same amount of
+information as the dependent sample obtained by the MCMC algorithm
+[@vehtari_rank-normalization_2021; @stan_development_team_stan_2025; @betancourt_conceptual_2018].
+We limited bulk ESS to at least 100 per chain, hence a minimum of 400 for the 4
+chains, based on recommendations with higher values of ESS indicating efficient
+mixing of the chains [@vehtari_rank-normalization_2021]. We additionally tracked
+$\hat{R}$, which is a measure of MCMC convergence and limited it to below $1.01$
+[@vehtari_rank-normalization_2021]. The number of divergent transitions during
+sampling, which indicates that the Hamiltonian Monte Carlo sampler has failed to
+accurately explore the posterior distribution due to irregular or complex
+geometry, potentially leading to biased inference, was limited to below 0.25% of
+the total posterior draws across all four chains (approximately 13 divergent
+transitions when obtaining $5,000$ posterior draws in total across chains)
+[@stan_development_team_stan_2025; @betancourt_conceptual_2018; @mcelreath_statistical_2018].
+We also tracked the model run times for computing efficiency metrics like the
+bulk ESS per second.
+
+The diagnostic results were summarised per province and dataset type, and time
+series of the bulk ESS per second and number of ratchets were plotted alongside
+reported cases to visualise sampling efficiency over time.
+
+We saved outputs of forecast reported case counts per slide, MCMC diagnostics
+(including divergences, $\hat{R}$, and basic/bulk/tail ESS), and model run
+times.
 
 ## Forecast scoring and evaluation
 
-We evaluated forecast accuracy using the Continuous Ranked Probability Score (CRPS) given by
+We evaluated forecast accuracy using the Continuous Ranked Probability Score
+(CRPS) given by
 
 $$
 CRPS(F, x) = \int_{-\infty}^{\infty} (F(y) - 1\{y \geq x \})^2 dy
 $$
 
-Where $F(\Theta)$ is the cumulative distribution function of $\Theta$, here, referring to the observed values, $x$, and forecast values, $y$, and 1 is the indicator function [@gneiting_strictly_2007; @bracher_evaluating_2021; @bosse_scoring_2023]. The CRPS is a proper scoring rule that quantifies the distance between the cumulative distribution of the forecast values and the observed case counts. CRPS was calculated on log-transformed forecasts and observations as this has been shown to produce more robust results [@bosse_scoring_2023]. The lower the CRPS value, the better. Forecasts were scored in four combinations within each slide:
+Where $F(\Theta)$ is the cumulative distribution function of $\Theta$, here,
+referring to the observed values, $x$, and forecast values, $y$, and 1 is the
+indicator function
+[@gneiting_strictly_2007; @bracher_evaluating_2021; @bosse_scoring_2023]. The
+CRPS is a proper scoring rule that quantifies the distance between the
+cumulative distribution of the forecast values and the observed case counts. The
+lower the CRPS value, the better. Forecasts were scored in five combinations
+within each slide:
 
-- Daily forecast vs. daily observations – daily forecasts compared with daily reported cases.
-- Daily forecast vs. weekly observations – daily forecasts aggregated to weekly totals and compared to weekly data.
-- Weekly forecast vs. daily observations – weekly forecasts disaggregated on a daily scale and compared to the daily series.
-- Rescaled weekly forecast vs. weekly observations – rescaled weekly forecasts compared to rescaled weekly counts.
+- Daily forecast vs. daily observations -- daily forecasts compared with daily
+  reported cases.
+- Daily forecast vs. weekly observations -- daily forecasts aggregated to weekly
+  totals and compared to weekly data.
+- Weekly forecast vs. daily observations -- weekly forecasts disaggregated on a
+  daily scale and compared to the daily series.
+- Weekly forecast vs. weekly observations -- weekly forecasts compared to weekly
+  observations.
+- Rescaled weekly forecast vs. weekly observations -- rescaled weekly forecasts
+  compared to weekly observations.
 
-We compared the default model's performance across the daily, weekly, and rescaled weekly data inputs using CRPS and ESS per second, computed as the effective sample size for a slide divided by the computation time in seconds. The two metrics represented forecast quality and computational efficiency respectively. Forecast scoring was facilitated by the scoringutils and scoringRules R packages [@bosse_evaluating_2024; @jordan_evaluating_2019].
+When forecasts and observations were on different temporal resolutions,
+predictions were accumulated between observed report dates before scoring so
+that CRPS was evaluated on aligned observation times. Specifically, forecast
+samples were joined to the observation dates, cumulative sums were computed
+within each sample and slide, and the accumulated predictions were then
+differenced at the observed time points to obtain aligned forecast values.
 
-We plotted a time series of the CRPS and ESS/sec alongside the time series of log-transformed daily and weekly cases for easy interpretability. We also pooled together the results across time and computed the geometric mean relative to the model using daily data. To provide more details of model computational requirements, we also showed a time of the number of refits per slide per province and for all three input types.
+We compared the default model's performance across the daily, weekly, and
+rescaled weekly data inputs using CRPS and ESS per second. For computational
+efficiency visualisation, we used tail ESS per second, computed as tail ESS for
+a slide divided by elapsed fitting time in seconds, where elapsed fitting time
+was defined as the maximum across chains of the combined warmup and sampling
+time, summed over all ratchets within a slide. The two metrics represented
+forecast quality and computational efficiency respectively. Forecast scoring was
+facilitated by the scoringutils R package [@bosse_evaluating_2024].
+
+We plotted a time series of the CRPS and ESS/sec alongside the time series of
+log-transformed daily and weekly cases for easy interpretability. We also pooled
+together the results across time and computed the geometric mean of the CRPS
+ratio relative to the model using daily data, calculated as the exponentiated
+mean of the log-ratios and stratified by province, forecast type, and evaluation
+resolution. To provide more details of model computational requirements, we also
+showed a time series of the number of refits per slide per province and for all
+three input types.
 
 ## Data and code availability
 
-The analysis used COVID-19 data from South Africa. The code for the analysis is available at https://github.com/epiforecasts/daily-vs-weekly-forecast-eval.
+The analysis used COVID-19 data from South Africa. The code for the analysis is
+available at https://github.com/epiforecasts/daily-vs-weekly-forecast-eval.
 
-All analyses were done with R version 4.5.1 [@r_core_team_r_2025] and orchestrated with GNU make [@noauthor_gnu_2006]. The SARS-CoV-2 incubation period was obtained from the epiparameter R package v0.4.1.900 [@lambert_epiparameter_2025], which stores a database of literature parameter estimates.
+All analyses were done with R version 4.5.1 [@r_core_team_r_2025] and
+orchestrated with GNU make [@noauthor_gnu_2006]. The SARS-CoV-2 incubation
+period was obtained from the epiparameter R package v0.4.1.900
+[@lambert_epiparameter_2025], which stores a database of literature parameter
+estimates.
 
 # Results
 
-<!-- Fig 1: Illustrative panel figure of forecast performance vs ESS/per sec results for one province.
-This figure shows the time series of reported cases, forecasts on a daily and weekly scale scored against daily, aggregated weekly, and weekly scale data, and computational efficiency (ESS tail per second) for the province xyz (see SI section xyz for plots of all provinces; underlying data available). [Describe figure trends, no analysis]. -->
+We present province-level results using the Eastern Cape (EC) as a
+representative example; equivalent figures for all other provinces are provided
+in the Supplementary Materials. The relative ranking of forecast accuracy was
+consistent across all nine provinces and the national aggregate (RSA); the
+computational diagnostics were only partly consistent, as detailed below.
 
-<!-- Fig 2: Relative CRPS (geometric mean) of permutation of daily/weekly/weekly scale training vs daily/weekly test for one province. -->
+## Forecast performance
 
-<!-- Fig 3: Scatter plot of geometric mean of relative CRPS for all provinces (get geometric mean for all provinces and show on one plot) for permutation of daily/weekly/weekly scale training vs daily/weekly test. -->
+@fig-panel-scores-EC shows the CRPS time series for the EC alongside the
+observed daily and weekly incidence. On a log scale, CRPS tracks the incidence
+level closely: the bulk of the scores span `r v("crps_oom_typical")` orders of
+magnitude between the inter-wave troughs and the epidemic wave peaks, and the
+extremes span more than three orders of magnitude, the widest of them during
+the largest wave (December 2021--January 2022) --- reflecting
+the larger absolute errors inherent to higher case counts. When evaluated
+against daily observations, forecasts trained on daily data produce lower CRPS
+than those trained on weekly data on `r v("pct_dates_daily_better")`% of dates
+across provinces, though this advantage is not consistently concentrated in periods
+of rapidly changing incidence. When evaluated against weekly observations, the
+weekly-trained forecasts remain modestly but consistently worse than the
+daily-trained forecasts, rather than comparable. In contrast, the rescaled
+weekly forecasts exhibit substantially worse CRPS --- approximately one to two
+orders of magnitude higher than the other two approaches --- across both
+evaluation resolutions, indicating that the time-compression strategy degrades
+predictive performance.
+
+![Forecast performance for the Eastern Cape province (EC). The top panel shows the daily (black points) and weekly (red horizontal segments) COVID-19 incidence. The bottom panel displays the Continuous Ranked Probability Score (CRPS) for daily, weekly, and rescaled weekly forecast targets (colours), with both incidence and CRPS shown on a log10 scale. The rows in the bottom panel are faceted by the temporal resolution of the evaluation data (daily or weekly). Equivalent plots for all other provinces are provided in the Supplementary Materials.](../local/figures/fig_panel_scores_EC.png){#fig-panel-scores-EC}
+
+## Computational diagnostics
+
+@fig-panel-diagnostics-EC displays the tail ESS per second and the number of
+adaptive ratchets for the EC. The rescaled weekly model achieves the highest
+sampling efficiency, with tail ESS per second typically in the range of
+`r v("ess_resc_lo")`--`r v("ess_resc_hi")` (interquartile range
+`r v("ess_resc_iqr_lo")`--`r v("ess_resc_iqr_hi")`), reflecting the smaller effective
+dataset size in the compressed time representation. The daily and weekly
+models show broadly similar efficiency --- daily typically
+`r v("ess_daily_lo")`--`r v("ess_daily_hi")` ESS per second (interquartile range
+`r v("ess_daily_iqr_lo")`--`r v("ess_daily_iqr_hi")`), weekly typically
+`r v("ess_weekly_lo")`--`r v("ess_weekly_hi")` (interquartile range
+`r v("ess_weekly_iqr_lo")`--`r v("ess_weekly_iqr_hi")`) --- with weekly showing
+wider variability, falling as low as `r v("ess_weekly_min")` at its worst,
+rather than sitting at a consistently lower level. The ratchet counts
+show a different pattern: for every configuration, the majority of slides
+converge without any adaptive refit. The weekly model required at least one
+refit in `r v("refit_pct_weekly")`% of slides (up to `r v("refit_max_weekly")`
+in the most difficult cases), compared with `r v("refit_pct_daily")`% and
+`r v("refit_pct_resc")`% of slides for the daily and rescaled weekly models
+(maximum `r v("refit_max_daily")` and `r v("refit_max_resc")` refits
+respectively). Refitting is therefore a tail
+phenomenon rather than a routine cost, though the weekly model is
+disproportionately represented in that tail. The ratchet-frequency ordering
+(weekly highest) held in all nine provinces and the national aggregate, but
+the daily-versus-weekly ESS-per-second ordering did not: weekly had higher
+median efficiency than daily in `r v("n_prov_weekly_ess_gt_daily")` of the
+`r v("n_prov_total")` locations.
+
+![Computational diagnostics for the Eastern Cape province (EC). The top panel shows the daily and weekly COVID-19 incidence. The middle panel displays the tail Effective Sample Size (ESS) per second on a log10 scale, representing sampling efficiency for different forecast targets (colours). The bottom panel shows the number of model ratchets (adaptive refits) required to achieve convergence for each forecast slide. Equivalent results for all other provinces are available in the Supplementary Materials.](../local/figures/fig_panel_diagnostics_EC.png){#fig-panel-diagnostics-EC}
+
+## Relative performance across provinces
+
+@fig-crps-all-provs-summarised compares the geometric mean CRPS ratio relative
+to the daily-trained baseline across all provinces. When evaluated against daily
+observations, the weekly-trained model produces CRPS
+`r v("crps_wkly_at_daily_lo")`--`r v("crps_wkly_at_daily_hi")`
+times higher than the daily-trained baseline (median
+`r v("crps_wkly_at_daily_med")`×) across provinces.
+When evaluated against weekly observations, the weekly-trained model produces
+CRPS `r v("crps_wkly_at_weekly_lo")`--`r v("crps_wkly_at_weekly_hi")` times
+higher than the daily-trained baseline
+(median `r v("crps_wkly_at_weekly_med")`×) --- consistently worse rather than
+comparable, though the gap
+narrows relative to the daily-observation comparison. The rescaled weekly
+model performs markedly worse, with CRPS ratios of
+`r v("crps_resc_at_weekly_lo")`--`r v("crps_resc_at_weekly_hi")` times
+higher (median `r v("crps_resc_at_weekly_med")`×) than the daily-trained
+baseline when both are evaluated
+against weekly observations. Province-to-province variability within each
+comparison scenario is small relative to the differences between scenarios,
+indicating that the relative performance of each approach is robust across
+locations. The national aggregate (RSA) falls at the upper, worst-performing
+end of the provincial distribution in all three scenarios, rather than the
+centre.
+
+![Relative forecast performance across all nine South African provinces and the national total (RSA). The plot shows the geometric mean of the Continuous Ranked Probability Score (CRPS) relative to the baseline model trained on daily data. Comparisons are shown for three scenarios: weekly aggregated training data tested against daily observations, rescaled weekly training tested against weekly observations, and weekly aggregated training tested against weekly observations. Values above the dashed line ($y=1$) indicate worse performance than the daily-trained baseline, while values below indicate better performance. Provinces are ordered by population size and colour-coded, with the national total (RSA) included for comparison.](../local/figures/fig_crps_summary_all_provs.png){#fig-crps-all-provs-summarised}
 
 # Discussion
 
-This study highlights the trade-offs of temporal aggregation in epidemiological forecasting. Daily data offer greater accuracy for short-term predictions, albeit at higher computational costs and diagnostic instability. Weekly data provide computational efficiency and smoother trends but sacrifice granularity and responsiveness to rapid changes in case dynamics. Though we did not explicitly investigate this element, it stands to reason that the underlying surveillance system to support higher frequency reporting would also entail additional cost (e.g. more required storage space, more bandwidth to support more frequent access).
+This study highlights the trade-offs of temporal aggregation in epidemiological
+forecasting. Daily data offer greater accuracy for short-term predictions.
+Weekly data achieve a similar typical sampling speed to daily data, but
+converge less reliably --- needing an adaptive refit more often --- and
+sacrifice granularity and responsiveness to rapid changes in case dynamics.
+Though we did not
+explicitly investigate this element, it stands to reason that the underlying
+surveillance system to support higher frequency reporting would also entail
+additional cost (e.g. more required storage space, more bandwidth to support
+more frequent access).
 
-These results have two stakeholders. To the users of EpiNow2, it addressed questions of how EpiNow2 performs under degrading data resolution conditions and the computational requirements to achieve reasonable model fits. To the tool developers, these results inform ways to improve the underlying model to tackle the issue of degrading data conditions.
+Our central finding on forecast performance is that daily and weekly data inputs
+yield CRPS of a similar order of magnitude, though not identical, when
+forecasts are evaluated at the same temporal resolution. When evaluated
+against weekly observations, the weekly-trained model produces CRPS
+`r v("crps_wkly_at_weekly_lo")`--`r v("crps_wkly_at_weekly_hi")`
+times higher than the daily-trained model
+(median `r v("crps_wkly_at_weekly_med")`×) --- consistently
+somewhat worse, rather than comparable --- and when evaluated against daily
+observations the weekly-trained model is
+`r v("crps_wkly_at_daily_lo")`--`r v("crps_wkly_at_daily_hi")` times worse. In
+contrast, the rescaled weekly approach produces CRPS
+`r v("crps_resc_at_weekly_lo")`--`r v("crps_resc_at_weekly_hi")` times larger
+than the daily-trained baseline. This pronounced degradation likely arises because
+compressing weekly intervals into pseudo-daily steps distorts the temporal
+dynamics that EpiNow2's renewal equation is designed to capture: generation
+times, incubation periods, and reporting delays are all divided by seven,
+fundamentally altering the relationship between latent infections and
+observed cases. By contrast, retaining the daily latent scale and treating
+the unreported days as missing --- so that the model explicitly accumulates
+reports across the days within each week --- preserves these epidemiological
+relationships, and explains why the standard weekly approach remains broadly
+competitive with daily forecasting --- modestly worse, rather than
+equivalent --- in contrast to the substantially degraded rescaled approach.
 
-The findings emphasize the importance of aligning forecast resolution with the specific objectives of a public health response. For example, aggregated data may be suitable for long-term trend analysis, while high-resolution daily data are better for rapid outbreak detection and intervention planning.
+The computational requirements of the three approaches present a more nuanced
+picture than their predictive performance alone would suggest. The weekly
+model, despite producing forecast accuracy only modestly worse than the daily
+model, converged less reliably: it required at least one adaptive refit in
+`r v("refit_pct_weekly")`% of forecast windows (up to
+`r v("refit_max_weekly")` in the most difficult cases), compared with
+`r v("refit_pct_daily")`% and `r v("refit_pct_resc")`% of windows for the daily
+and rescaled weekly models respectively. This was not, however, accompanied by consistently lower steady-state
+sampling efficiency --- tail ESS per second for the weekly and daily models
+overlapped substantially across provinces, with weekly showing a higher
+median than daily in `r v("n_prov_weekly_ess_gt_daily")` of the
+`r v("n_prov_total")` locations. Weekly's additional
+computational burden therefore shows up as wider variability and a heavier
+tail of slow, hard-to-converge fits, rather than as a uniformly slower
+sampler. This pattern is consistent with the challenge of fitting a model
+designed for daily latent dynamics to data observed only once per week: most
+weeks the posterior geometry is unremarkable, but the implicit
+marginalisation over unobserved daily counts occasionally produces a
+substantially harder fit. Conversely, the rescaled weekly model achieved the
+highest sampling efficiency by a wide margin (typically
+`r v("ess_resc_lo")`--`r v("ess_resc_hi")` tail ESS
+per second) because its compressed time axis greatly reduced the effective
+number of latent time steps, simplifying the posterior. However, this
+computational efficiency came at the cost of dramatically worse predictive
+performance, demonstrating that sampling efficiency and forecast quality are
+not interchangeable objectives --- and that, for the weekly model, the
+practical computational cost is better captured by how often refitting is
+needed than by typical sampling speed.
 
-The evaluation of scoring methodologies and diagnostics in this study also provides a framework for future analyses. Metrics such as CRPS, effective sample sizes, and divergence rates offer robust measures of forecast reliability and can be adapted to various modeling contexts. Though the daily data did generally provide better forecast performance, the algorithmic extensions to explicitly account for missingness kept the weekly resolution approach competitive. Such model enhancements may not always be practical, but this work suggests they can be valuable.
+These results have two stakeholders. To the users of EpiNow2, it addressed
+questions of how EpiNow2 performs under degrading data resolution conditions and
+the computational requirements to achieve reasonable model fits. To the tool
+developers, these results inform ways to improve the underlying model to tackle
+the issue of degrading data conditions.
+
+The findings emphasize the importance of aligning forecast resolution with the
+specific objectives of a public health response. For example, aggregated data
+may be suitable for long-term trend analysis, while high-resolution daily data
+are better for rapid outbreak detection and intervention planning.
+
+Several limitations should be considered when interpreting these results. First,
+we used a single forecasting framework (EpiNow2), and our findings may not
+generalise to other modelling approaches that handle temporal aggregation
+differently. Second, we focused on a single disease (COVID-19) in a single
+country (South Africa), and the relative performance of daily versus weekly
+inputs may vary for pathogens with different generation times or in settings
+with different surveillance characteristics. Third, the rescaled weekly pipeline
+used a hardcoded incubation period (LogNormal with mean 5/7 and sd 1/7) that
+approximates but may not exactly replicate the distribution obtained from the
+epiparameter database at runtime, introducing a minor inconsistency between the
+rescaled and standard pipelines. Finally, the analysis relies on reported case
+data that are subject to surveillance artefacts including reporting delays,
+retrospective corrections, and negative incidence values arising from cumulative
+count adjustments, all of which were addressed through data cleaning but may
+still influence forecast performance.
+
+Our findings complement and extend prior work on temporal aggregation in
+epidemiological inference. @nash_estimating_2023 demonstrated that daily
+reproduction numbers can be recovered from weekly data using
+expectation-maximisation within EpiEstim, while
+@ogi-gittins_simulation-based_2025 showed that ABC-based methods can accurately
+estimate reproduction numbers from aggregated counts, albeit with greater
+algorithmic complexity. @steyn_primer_2025 applied Sequential Monte Carlo
+methods to renewal models with weekly aggregation and achieved competitive
+performance relative to models with day-of-week effects. These studies focused
+primarily on retrospective inference --- estimating reproduction numbers or
+elimination probabilities --- rather than on evaluating the quality of
+out-of-sample forecasts. Our work extends this literature in two respects: we
+systematically compare forecast performance on unseen data across daily, weekly,
+and rescaled weekly inputs using proper scoring rules (CRPS), and we jointly
+assess computational diagnostics (ESS per second, ratchet counts, divergences)
+alongside forecast accuracy, providing a more complete picture of the practical
+trade-offs involved in using temporally aggregated data.
+
+The evaluation of scoring methodologies and diagnostics in this study also
+provides a framework for future analyses. Metrics such as CRPS, effective sample
+sizes, and divergence rates offer robust measures of forecast reliability and
+can be adapted to various modeling contexts. Though the daily data did generally
+provide better forecast performance, the algorithmic extensions to explicitly
+account for missingness kept the weekly resolution approach competitive. Such
+model enhancements may not always be practical, but this work suggests they can
+be valuable.
+
+For practitioners deciding between daily and weekly data inputs, we recommend
+the following workflow. First, if daily data are available and computational
+resources permit, daily-resolution forecasting with EpiNow2 provides the best
+combination of forecast accuracy and reliable convergence, needing an
+adaptive refit in `r v("refit_pct_daily")`% of forecast windows. Second, when only weekly data
+are available --- or when daily collection and processing costs are
+prohibitive --- the standard weekly approach, in which the latent process is
+retained on a daily scale and the unreported days are modelled as missing and
+accumulated, can achieve forecast accuracy within a similar order of
+magnitude of the daily approach, provided that sufficient computational
+budget is allocated for adaptive tuning; practitioners should expect most
+forecast windows to converge without any adaptive refit, but should budget
+for the possibility of several refits (up to `r v("refit_max_weekly")` in the
+most difficult windows) in `r v("refit_pct_weekly")`% of windows, and should
+monitor convergence using
+the diagnostic thresholds described in this study (divergences below 0.25% of
+total draws, $\hat{R}$ below 1.01, and bulk ESS above 400). Third, the
+rescaled weekly approach, while computationally
+efficient, should be avoided for operational forecasting given its substantially
+degraded predictive performance. More broadly, we recommend that forecast
+evaluation routinely combine proper scoring rules with computational
+diagnostics, as our results demonstrate that high sampling efficiency does not
+guarantee good forecast quality, and adequate convergence diagnostics are
+necessary to ensure that model outputs are reliable for decision-making.
 
 # Acknowledgements
 
-The authors would like to acknowledge the International Clinics on Infectious Disease Dynamics and Data (ICI3D) faculty and particularly the Meaningful Modeling of Epidemiological Data (MMED) 2024 workshop faculty for their support during the incubation of this project.
+The authors would like to acknowledge the International Clinics on Infectious
+Disease Dynamics and Data (ICI3D) faculty and particularly the Meaningful
+Modeling of Epidemiological Data (MMED) 2024 workshop faculty for their support
+during the incubation of this project.

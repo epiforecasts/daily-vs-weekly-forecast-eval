@@ -4,14 +4,15 @@ local.makefile
 .Rhistory
 .RData
 .Ruserdata
+*.html
 
 local/*
+!local/figures/
 network/*
 network
 
 *.csv
 *.rds
-*.png
 
 .Rprofile
 .DS_Store
@@ -23,6 +24,7 @@ renv/*
 # Paper rendering artifacts
 paper/*.tex
 paper/*.bst
+paper/paper_files/*
 
 # Claude Code artifacts
 .claude/
@@ -30,3 +32,18 @@ paper/*.bst
 # Local AI assistant artifacts
 .gemini/
 GEMINI.md
+
+# Quarto HTML render artifacts
+paper/paper.html
+paper/paper_files/
+
+# Local diagram render artifact
+paper/analysis_pipeline.pdf
+
+# The manuscript quotes its result numbers from this summary, so it must be
+# committed: paper.qmd reads it at render time and CI has no local/output/.
+# This block must stay at the end of the file -- the *.rds rule above would
+# otherwise re-ignore it, since later patterns win.
+!local/output/
+local/output/*
+!local/output/paper_summary.rds

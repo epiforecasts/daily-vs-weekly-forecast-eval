@@ -30,7 +30,7 @@ make all_figs                  # Generate all figures (scores + diagnostics pane
 
 **Paper Rendering:**
 ```bash
-make paper                      # Render paper/paper.qmd to paper/paper.pdf
+make paper_main_text            # Render paper/paper.qmd to paper/paper.pdf
 cd paper && quarto render paper.qmd  # Alternative: render directly with Quarto
 ```
 
@@ -46,7 +46,6 @@ make test ONEPROV=WC           # Run test pipeline for Western Cape
   - `local/figures/`: Generated figures and visualizations
   - `local/output/`: Forecast results, scores, and diagnostics
 - `R/`: Core analysis scripts (reusable functions)
-- `main/`: Legacy/exploratory scripts (not used in main pipeline)
 - `paper/`: Quarto manuscript and bibliography
 - `renv/`: R package environment (managed by renv)
 
@@ -56,8 +55,8 @@ make test ONEPROV=WC           # Run test pipeline for Western Cape
 
 The analysis follows a Make-driven pipeline with distinct stages:
 
-1. **Data Acquisition** (`get_data.R` → `raw.csv`)
-   - Downloads South African provincial COVID-19 data from DSFSI GitHub
+1. **Data Acquisition** (`Makefile` `DATAURL` rule → `raw.csv`)
+   - Downloads South African provincial COVID-19 data from DSFSI GitHub via `curl`
 
 2. **Data Import** (`R/import.R` → `intermediate.rds`)
    - Type conversion and pivoting raw CSV to long format
@@ -178,11 +177,63 @@ The project uses renv for R package management. All dependencies are locked in `
 
 The manuscript is in `paper/paper.qmd` (Quarto format) and renders to PLOS One journal style using the `quarto-journals/plos` extension. A GitHub Actions workflow automatically renders the paper when changes are pushed to main.
 
+### Tracking manuscript changes
+
+Two files track work on the manuscript, and **both must be kept current whenever `paper.qmd` is proposed to change or is changed**. They are complementary, not overlapping:
+
+- **`paper/paper_plan.md` — proposed changes.** Anything not yet applied. Grouped by whether it can be done now or is blocked on regenerating `local/output/`, with a Commit column left empty until it lands.
+- **`paper/paper_changes.md` — completed changes.** Chronological history of what has actually been committed, with the commit hash for each.
+
+The required workflow:
+
+1. **When proposing a change**, add a row to `paper_plan.md` with an empty Commit column. Never record a proposal in `paper_changes.md` — that file describes only what exists in the history. The previous revision violated this and left eight proposals filed under "Changes made", written in imperative mood with no hashes; several had silently landed and two had become obsolete.
+2. **When applying a change**, commit `paper.qmd` first, then record the resulting hash in *both* files: fill in the Commit column in `paper_plan.md` (marking the item applied), and add the entry to `paper_changes.md`.
+3. **Cross-reference rather than duplicate.** When one file needs context that lives in the other, link to it by section (e.g. "see `paper_plan.md` section D") instead of restating the content, so the two cannot drift.
+4. **Refresh line references in `paper_plan.md`** after any edit that shifts line numbers, and state which commit they are current as of. Editing the Methods routinely moves the Results and Discussion by a dozen lines.
+5. **Verify every hash is reachable** (`git merge-base --is-ancestor <hash> HEAD`) before recording it. This branch has been rebased before, and orphaned commits still resolve under `git show`, so a stale hash looks valid while pointing at history no longer on any branch.
+
+### Result numbers in the manuscript
+
+**Never write a result number into `paper.qmd` by hand.** Every quantity the
+Results and Discussion quote is computed by `R/summarise_results.R` into
+`local/output/paper_summary.rds` and referenced inline as `` `r v("key")` ``.
+To quote something new, add it to the `vals` list in that script and rebuild
+with `make paper_summary`.
+
+Rounding lives in that script and nowhere else, so the prose and the figures
+cannot round the same quantity differently.
+
+The script also evaluates the directional statements the prose depends on --
+that weekly-trained forecasts are worse in every province, that median refits
+is zero everywhere, and so on. If one stops holding, it stops **before writing
+anything** and names the claim, so `make` fails rather than leaving a stale
+artefact. A failing claim means a *sentence* has become false and needs
+rewriting, not that a number needs nudging. Add a claim whenever the prose
+starts to depend on a direction, an ordering, or a count.
+
+Two things this does not cover. The abstract and author-summary are YAML front
+matter, which Quarto does not execute, so they must stay qualitative. And
+design constants -- convergence thresholds, window lengths, sample counts,
+delay-distribution parameters -- are pipeline inputs rather than results, so
+they stay written out.
+
+Post-processing helpers belong in `R/summary_utils.R`, **not**
+`R/pipeline_shared_inputs.R`: the latter is a prerequisite of the forecasting
+rules, so editing it marks every forecast out of date and the next `make`
+refits the whole pipeline.
+
+### Manuscript writing style
+
+**Do not name functions in the prose.** Describe what the function does instead, so the text reads as a method rather than as an API reference and stays meaningful to readers who do not use the package. For example, write "the input series was completed so that every date in its range was present, with reports accumulated onto the date where the next report occurred" rather than "`fill_missing()` was called".
+
+This applies to functions only. Software *packages* (EpiNow2, scoringutils, `cmdstanr`, `rstan`) should still be named and cited — they identify what was used, and the citations depend on them.
+
+When rewording, check whether the same function is referenced elsewhere in the manuscript; the Discussion often restates a mechanism introduced in the Methods, and both need to change together.
+
 ## Important Notes
 
 - Forecasting is computationally expensive (hours to days for all provinces)
 - Start testing with a single province: `make test`
-- The `main/` directory contains legacy exploratory code; active pipeline is in `R/`
 - Command-line arguments in R scripts use pattern: `commandArgs(trailingOnly = TRUE)`
 - Interactive mode (in RStudio/R console) uses `.args` defined at script top
 - All R scripts source `R/pipeline_shared_inputs.R` for shared functions and parameters

@@ -59,6 +59,11 @@ PROVINCES := GP WC EC KZN FS LP MP NC NW
 # Shared inputs
 SHARED_INPUTS = R/pipeline_shared_inputs.R
 
+# Post-processing helpers for the scoring figures and the manuscript summary.
+# Kept apart from SHARED_INPUTS, which the forecasting rules depend on, so that
+# changing them never marks the forecasts out of date.
+SUMMARY_UTILS = R/summary_utils.R
+
 # define all possible extracts
 $(foreach agg,daily weekly,$(foreach tar,${PROVINCES},$(eval EXTRACTS += ${DATDIR}/${agg}_${tar}.rds)))
 
@@ -97,9 +102,6 @@ ${FIGDIR}/fig_panel_diagnostics_%.png: \
 	R/fig_panel_diagnostics.R \
 	${DATDIR}/daily_%.rds \
 	${DATDIR}/weekly_%.rds \
-	${OUTDIR}/forecast_daily_%.rds \
-	${OUTDIR}/forecast_weekly_%.rds \
-	${OUTDIR}/forecast_rescale_%.rds \
 	${OUTDIR}/diagnostics_%.csv \
 	${SHARED_INPUTS} | ${FIGDIR}
 	$(call R)
@@ -107,8 +109,8 @@ ${FIGDIR}/fig_panel_diagnostics_%.png: \
 ${FIGDIR}/score_scatter_%.png: R/fig_crps.R ${OUTDIR}/score_%.rds | ${FIGDIR}
 	$(call R)
 
-${FIGDIR}/fig_crps_summary_all_provs.png: R/fig_crps_summary_all_provs.R $(patsubst %,${OUTDIR}/score_%.rds,${PROVINCES} RSA) | ${FIGDIR}
-	Rscript $< ${OUTDIR} $@
+${FIGDIR}/fig_crps_summary_all_provs.png: R/fig_crps_summary_all_provs.R $(patsubst %,${OUTDIR}/score_%.rds,${PROVINCES} RSA) ${SUMMARY_UTILS} | ${FIGDIR}
+	Rscript $< ${OUTDIR} ${SUMMARY_UTILS} $@
 
 # pattern = some province
 DAILYDAT_PAT = ${DATDIR}/daily_%.rds
@@ -127,6 +129,15 @@ ${OUTDIR}/score_%.rds: R/score.R ${DATDIR}/daily_%.rds ${DATDIR}/weekly_%.rds ${
 
 ${OUTDIR}/diagnostics_%.csv: R/diagnostics.R ${OUTDIR}/forecast_daily_%.rds ${OUTDIR}/forecast_weekly_%.rds ${OUTDIR}/forecast_rescale_%.rds ${SHARED_INPUTS}
 	$(call R)
+
+# Values quoted in the manuscript. Committed to the repository (see .gitignore)
+# because paper.qmd reads it at render time and CI has no local/output/.
+${OUTDIR}/paper_summary.rds: R/summarise_results.R ${SUMMARY_UTILS} \
+	$(patsubst %,${OUTDIR}/score_%.rds,${PROVINCES} RSA) \
+	$(patsubst %,${OUTDIR}/diagnostics_%.csv,${PROVINCES} RSA)
+	Rscript $< ${OUTDIR} ${SUMMARY_UTILS} $@
+
+paper_summary: ${OUTDIR}/paper_summary.rds
 
 # all targets at once
 all_diagnostics: $(patsubst %,${OUTDIR}/diagnostics_%.csv,${PROVINCES} RSA)
@@ -150,11 +161,23 @@ PAPERDIR := paper
 PAPERSRC := ${PAPERDIR}/paper.qmd
 PAPEROUT := ${PAPERDIR}/paper.pdf
 
-${PAPEROUT}: ${PAPERSRC} ${PAPERDIR}/bibliography.bib
+${PAPEROUT}: ${PAPERSRC} ${PAPERDIR}/bibliography.bib ${OUTDIR}/paper_summary.rds
 	cd ${PAPERDIR} && quarto render paper.qmd
 
-paper: ${PAPEROUT}
+paper_main_text: ${PAPEROUT}
 
-.PHONY: paper
+# Supplementary materials rendering
+SUPPSRC := ${PAPERDIR}/supplementary.qmd
+SUPPOUT := ${PAPERDIR}/supplementary.pdf
+
+${SUPPOUT}: ${SUPPSRC} all_scores_panel_figs all_diagnostics_panel_figs
+	cd ${PAPERDIR} && quarto render supplementary.qmd
+
+supplementary: ${SUPPOUT}
+
+# Combined paper + supplementary target
+paper_full: paper_main_text supplementary
+
+.PHONY: paper_main_text supplementary paper_full paper_summary
 
 endrule: all_figs

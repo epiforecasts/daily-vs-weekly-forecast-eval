@@ -10,19 +10,16 @@ library(patchwork)
 .args <- if (interactive()) {
     c(
         file.path("local", "output"),
+        file.path("R", "summary_utils.R"),
         file.path("local", "figures", "fig_crps_summary_all_provs.png")
     )
 } else commandArgs(trailingOnly = TRUE)
 
-fls <- list.files(.args[1], "score_.*\\.rds", full.names = TRUE)
+# Load the shared post-processing helpers
+source(.args[length(.args) - 1])
 
 # Scores
-scores <- fls |> setNames(gsub("^.*_(.*)\\.rds$", "\\1", fls)) |>
-    lapply(readRDS) |>
-    rbindlist(idcol = "province")
-
-pop_order <- c("NC", "FS", "NW", "MP", "LP", "EC", "WC", "KZN", "GP", "RSA")
-scores[, province := factor(province, levels = pop_order, ordered = TRUE)]
+scores <- read_scores(.args[1])
 
 ## TODO currently aggregating scores via mean - probably just keep the actual dates?
 # scores[data == "daily" & forecast == "daily", date := date - 6 ]
@@ -40,15 +37,7 @@ yearextract <- function(dates, force = 2, showmonth = 1) {
     return(ifelse(show, sprintf("\n'%s", yrs), "\n "))
 }
 
-scores_ref <- scores[forecast == "daily"][, .SD, .SDcols = -c("forecast")]
-
-scores_rel <- scores[forecast != "daily"][scores_ref, on = .(slide, date, data, province), nomatch = 0]
-
-geomean_dt <- scores_rel[,{
-    qs <- quantile(crps/i.crps, probs = c(0.025, 0.25, 0.5, 0.75, 0.975)) |>
-        setNames(c("lo95", "lo50", "md", "hi50", "hi95"))
-    c(qs, geomean = exp(mean(log(crps/i.crps)))) |> as.list()
-}, by=.(forecast, data, province)]
+geomean_dt <- crps_ratio_summary(scores)
 
 rel_plot <- ggplot(data = geomean_dt[slide_counts, on = .(data)]) +
     aes(

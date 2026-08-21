@@ -6,12 +6,16 @@ on:
       - main
     paths:
       - 'paper/**'
+      # The manuscript quotes its result numbers from this summary, so a
+      # regenerated summary changes the rendered paper.
+      - 'local/output/paper_summary.rds'
       - '.github/workflows/render-paper.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'paper/**'
+      - 'local/output/paper_summary.rds'
   workflow_dispatch:
 
 jobs:
@@ -32,6 +36,22 @@ jobs:
 
       - name: Install TinyTeX
         run: quarto install tinytex
+
+      # paper.qmd reads local/output/paper_summary.rds for the values quoted in
+      # the Results and Discussion, so the render needs R. The summary is a
+      # plain list of base R types, so knitr is the only package required --
+      # no renv restore and no EpiNow2.
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # Installed directly rather than via setup-r-dependencies, which would
+      # try to resolve the renv.lock in the repository root and pull in the
+      # whole forecasting stack.
+      - name: Install knitr
+        run: install.packages("knitr")
+        shell: Rscript {0}
 
       - name: Render paper
         run: |

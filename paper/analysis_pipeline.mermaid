@@ -1,0 +1,26 @@
+---
+config:
+  flowchart:
+    curve: basis
+---
+graph TD
+    subgraph Data_Prep [**Data Preparation**]
+        A[Get & Clean Raw Provincial Daily Data] --> B[Aggregate Daily Data to Weekly Scale]
+        B --> C[Generate Rescaled Weekly Data from Weekly Data]
+    end
+
+    subgraph Modeling [**Forecasting Models**]
+        A --> D[Daily and Weekly Model]
+        B --> D[Daily and Weekly Model]
+        C --> E[Rescaled Weekly Model]
+    end
+
+    subgraph Evaluation [**Evaluation**]
+        D & E --> F["Forecast Scoring (CRPS)"]
+        D & E --> G["Diagnostics (Divergences, ESS tail per second)"]
+    end
+
+    subgraph Visualisation [**Visualisation**]
+        F --> H["log(Incidence) & log(CRPS)"]
+        G --> I["log(Incidence) & log(ESS tail/sec) & ratchets"]
+    end
